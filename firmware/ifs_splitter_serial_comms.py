@@ -101,5 +101,7 @@ class IFSSplitterSerialComms:
         if ifs_index >= 0:
             self.listen_ifs = ifs_index
         if not flag_only:
+            self.en_pins_ifs[self.listen_ifs].low()
             for i, pin in enumerate(self.en_pins_ifs):
-                pin.value(i != self.listen_ifs)
+                if i != self.listen_ifs:
+                    pin.high()

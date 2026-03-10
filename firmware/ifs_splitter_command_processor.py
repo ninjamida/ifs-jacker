@@ -158,9 +158,15 @@ class IFSSplitterCommandProcessor:
             self.send(i, command, set_listen_ifs=False)
             responses[i] = self.read_ifs()
         unique_responses = {response for response in responses if response}
-        if len(unique_responses) <= 1:
+        if len(unique_responses) == 0:
+            responses[0] = ""
             for i in range(1, len(responses)):
                 responses[i] = None
+        elif len(unique_responses) == 1:
+            responses[0] = next(iter(unique_responses))
+            for i in range(1, len(responses)):
+                responses[i] = None
+            
         self.serial.set_listen_ifs()
 
     def process_F12(self, elements, send_commands, responses):
@@ -297,6 +303,23 @@ class IFSSplitterCommandProcessor:
             else:
                 send_commands[i] = 'F18'
         self.serial.set_listen_ifs(target_ifs)
+
+        # If all other IFSes respond "F18 ok." or don't respond (presumably not attached), we discard their responses
+        any_abnormal_response = False
+        for i, response in enumerate(responses):
+            if i != target_ifs:
+                if response != None and response != "" and response != "F18 ok":
+                    any_abnormal_response = True
+                    break
+
+        if responses[target_ifs] != None:
+            responses[target_ifs] = responses[target_ifs].replace(f"chan {((color_index - 1) % 4) + 1}.", f"chan {color_index}.")
+            
+        if not any_abnormal_response:
+            for i in range(len(responses)):
+                if i != target_ifs:
+                    responses[i] = None
+
                 
     def process_F37(self, elements, send_commands, responses):
         # Enter firmware update mode - not supported via splitter
@@ -359,7 +382,7 @@ class IFSSplitterCommandProcessor:
             for i in range(len(send_commands)):
                 send_commands[i] = None
                 responses[i] = None
-            responses[0] = f"Z1 error. Exception was raised, type {e.__class__.__name__}"
+            responses[0] = f"Z2 error. Exception was raised, type {e.__class__.__name__}"
 
     def process_Z99(self, elements, send_commands, responses):
         self.terminate = True

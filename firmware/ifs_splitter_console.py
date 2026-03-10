@@ -28,7 +28,7 @@ class IFSSplitterConsole:
                         line_text = f"{time.ticks_ms():0{CONSTS.TIMESTAMP_DIGITS}d}  {line}"
                         print(line_text)
                         self.logging.log(line_text)
-                        if line_text.startswith('Z99 ok.'):
+                        if line.startswith('^^<< Z99 ok.'):
                             self.terminate = True
                     self.need_refresh_prompt = True
 

@@ -17,7 +17,8 @@ def main():
     processor.execute()
 
     threadcomm.send(CONSTS.MAIN_THREADCOMM, "Z99")
-    while processor.is_running:
+    threadcomm.send(CONSTS.CONSOLE_THREADCOMM, "Z99")
+    while processor.is_running or console.is_running:
         pass
 
 main()
