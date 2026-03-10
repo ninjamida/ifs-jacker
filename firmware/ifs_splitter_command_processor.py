@@ -21,6 +21,14 @@ class IFSSplitterCommandProcessor:
         self.passthrough_target = USER_CONSTS.INITIAL_PASSTHROUGH_TARGET
         self.passthrough_z_command_enable_time = time.ticks_ms()
 
+    def send(self, ifs_index, message, encode=True, linebreak=None, set_listen_ifs=True):
+        prefix = "^^" if ifs_index < 0 else f"{ifs_index:02d}"
+        if isinstance(message, str):
+            self.threadcomm.send(self.console_threadcomm_id, f"{prefix}<< {message}")
+        else:
+            self.threadcomm.send(self.console_threadcomm_id, f"{prefix}<< 0x{message.hex()}")
+        self.serial.send(ifs_index, message, encode, linebreak, set_listen_ifs)
+
     def execute(self):
         self.is_running = True
         while not self.terminate:
@@ -33,30 +41,32 @@ class IFSSplitterCommandProcessor:
                 self.threadcomm.send(self.console_threadcomm_id, f"# >> {mod_input_data}")
             elif self.serial.check_read_printer():
                 input_data = self.serial.read_printer(not is_passthrough, not is_passthrough)
-                reset_z_command_delay = True
-                if time.ticks_diff(self.passthrough_z_command_enable_time, time.ticks_ms()) <= 0:
-                    try:
-                        input_decode = str(input_data, 'utf-8')
-                        if input_decode.startswith("Z"):
-                            elements = input_decode.split()
-                            if elements[0] in self.special_instructions:
-                                input_data = input_decode
-                                reset_z_command_delay = False
-                    except (UnicodeDecodeError, IndexError):
-                        elements = None
-                if reset_z_command_delay:
-                    self.passthrough_z_command_enable_time = time.ticks_add(time.ticks_ms(), CONSTS.PASSTHROUGH_MINIMUM_SILENCE_BEFORE_Z_COMMAND * 1000)
-                if isinstance(input_data, str):
-                    mod_input_data = input_data.replace('\r', '\\r')
-                    mod_input_data = mod_input_data.replace('\n', '\\n')
+                if is_passthrough:
+                    reset_z_command_delay = True
+                    if time.ticks_diff(self.passthrough_z_command_enable_time, time.ticks_ms()) <= 0:
+                        try:
+                            input_decode = str(input_data, 'utf-8')
+                            if input_decode.startswith("Z"):
+                                elements = input_decode.split()
+                                if elements[0] in self.special_instructions:
+                                    input_data = input_decode
+                                    reset_z_command_delay = False
+                        except (UnicodeDecodeError, IndexError):
+                            elements = None
+                    if reset_z_command_delay:
+                        self.passthrough_z_command_enable_time = time.ticks_add(time.ticks_ms(), CONSTS.PASSTHROUGH_MINIMUM_SILENCE_BEFORE_Z_COMMAND * 1000)
+                    if isinstance(input_data, str):
+                        mod_input_data = input_data.replace('\r', '\\r')
+                        mod_input_data = mod_input_data.replace('\n', '\\n')
+                    else:
+                        mod_input_data = f"0x{input_data.hex()}"
                 else:
-                    mod_input_data = f"0x{input_data.hex()}"
+                    mod_input_data = input_data
                 self.threadcomm.send(self.console_threadcomm_id, f"^^>> {mod_input_data}")
             
             if input_data != None:
                 if is_passthrough and elements == None:
-                    self.threadcomm.send(self.console_threadcomm_id, f"{self.serial.get_listen_ifs():02d}<< {mod_input_data}")
-                    self.serial.send(self.serial.get_listen_ifs(), input_data, False, False)
+                    self.send(self.serial.get_listen_ifs(), input_data, False, False)
                 else:
                     if elements == None: # No point duplicating the effort
                         elements = input_data.split()
@@ -66,7 +76,7 @@ class IFSSplitterCommandProcessor:
                 input_data = self.serial.read_ifs(False, False)
                 input_hex = input_data.hex()
                 self.threadcomm.send(self.console_threadcomm_id, f"vv>> 0x{input_hex}")
-                self.serial.send(-1, input_data, False, False)
+                self.send(-1, input_data, False, False)
 
         self.is_running = False
 
@@ -78,7 +88,7 @@ class IFSSplitterCommandProcessor:
         instruction = elements[0]
         if instruction.startswith('Z') or instruction in self.special_instructions:
             target_cmd = f"process_{instruction}"
-            if target_cmd in globals():
+            if hasattr(self, target_cmd) and callable(getattr(self, target_cmd)):
                 handler = getattr(self, target_cmd)
                 handler(elements, send_commands, responses)
             else:
@@ -102,7 +112,7 @@ class IFSSplitterCommandProcessor:
         for i in range(len(send_commands)):
             if send_commands[i] != None:
                 command_count += 1
-                self.serial.send(i, send_commands[i], set_listen_ifs=update_listen_ifs)
+                self.send(i, send_commands[i], set_listen_ifs=update_listen_ifs)
                 responses[i] = self.serial.read_ifs()
             if responses[i] != None:
                 response_count += 1 # This may be set by a special handler or Z* command rather than the above branch, hence the seperate check        
@@ -113,14 +123,14 @@ class IFSSplitterCommandProcessor:
         if response_count == 1:
             for r in responses:
                 if r != None:
-                    self.serial.send(-1, r)
+                    self.send(-1, r)
         elif response_count > 1:
             combined_response = '|'.join([f"IFS{i}:{responses[i]}" for i, r in enumerate(responses) if r])
-            self.serial.send(-1, combined_response)
+            self.send(-1, combined_response)
 
     def send_all_merge_identical(self, command, responses):
         for i in range(len(responses)):
-            self.serial.send(i, command, set_listen_ifs=False)
+            self.send(i, command, set_listen_ifs=False)
             responses[i] = self.serial.read_ifs()
         unique_responses = {response for response in responses if response}
         if len(unique_responses) <= 1:
@@ -131,7 +141,7 @@ class IFSSplitterCommandProcessor:
     def process_F12(self, elements, send_commands, responses):
         result = "F12 ok."
         for i in range(len(send_commands)):
-            self.serial.send(i, "F12", set_listen_ifs=False)
+            self.send(i, "F12", set_listen_ifs=False)
             this_response = self.serial.read_ifs()
             if this_response.startswith('F12 ok. '):
                 result += this_response[7:-1]
@@ -157,7 +167,7 @@ class IFSSplitterCommandProcessor:
         result_unknowns = {}
         listen_ifs = self.serial.get_listen_ifs()
         for i in range(len(send_commands)):
-            self.serial.send(i, "F13", set_listen_ifs=False)
+            self.send(i, "F13", set_listen_ifs=False)
             this_response = self.serial.read_ifs()
             if this_response.startswith('F13 ok. '):
                 items = this_response[8:].split(' ')
@@ -200,7 +210,7 @@ class IFSSplitterCommandProcessor:
         # Stall detection info - need to merge output
         result = "F14 ok. stall:"
         for i in range(len(send_commands)):
-            self.serial.send(i, "F14", set_listen_ifs=False)
+            self.send(i, "F14", set_listen_ifs=False)
             this_response = self.serial.read_ifs()
             if this_response.startswith('F14 ok. stall: '):
                 result += this_response[14:-1]
@@ -224,7 +234,7 @@ class IFSSplitterCommandProcessor:
         silk_data = ""
         stall_data = ""
         for i in range(len(send_commands)):
-            self.serial.send(i, "F21", set_listen_ifs=False)
+            self.send(i, "F21", set_listen_ifs=False)
             this_response = self.serial.read_ifs()
             if this_response.startswith("F21 ok. \r\n"):
                 lines = this_response.split('\r\n')
@@ -239,7 +249,7 @@ class IFSSplitterCommandProcessor:
     def process_F22(self, elements, send_commands, responses):
         result_flag = 0
         for i in range(len(send_commands)):
-            self.serial.send(i, "F22", set_listen_ifs=False)
+            self.send(i, "F22", set_listen_ifs=False)
             this_response = self.serial.read_ifs()
             if this_response.startswith("F22 ok. "):
                 result_flag += int(this_response[29:]) << (i * 4)
@@ -271,7 +281,7 @@ class IFSSplitterCommandProcessor:
         # Stall counts - need to merge output
         result = "F40 ok.stall count: "
         for i in range(len(send_commands)):
-            self.serial.send(i, "F40", set_listen_ifs=False)
+            self.send(i, "F40", set_listen_ifs=False)
             this_response = self.serial.read_ifs()
             new_values = [0] * 4
             if this_response.startswith('F40 ok.stall count: '):
