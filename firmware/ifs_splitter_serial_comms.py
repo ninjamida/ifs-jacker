@@ -22,7 +22,6 @@ class IFSSplitterSerialComms:
             first = False
 
     def send(self, ifs_index, message, encode=True, linebreak=None, set_listen_ifs=True):
-        global listen_ifs
         if ifs_index >= 0:
             if set_listen_ifs:
                 self.listen_ifs = ifs_index
