@@ -2,7 +2,8 @@ import time, sys, uselect
 import ifs_splitter_system_consts as CONSTS
 
 class IFSSplitterConsole:
-    def __init__(self, threadcomm, threadcomm_id, main_threadcomm_id, logging):
+    def __init__(self, config, threadcomm, threadcomm_id, main_threadcomm_id, logging):
+        self.config = config
         self.terminate = False
         self.input_buffer = ""
         self.need_refresh_prompt = True

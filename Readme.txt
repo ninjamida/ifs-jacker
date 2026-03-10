@@ -43,32 +43,53 @@ for the additional IFSes. And so on. These commands are: F12, F14, F21, F22, F40
 
 -= Unique special handling commands =-
 
+F12 - get channel state. The data from all IFSes will be combined (a missing IFS will be treated as if all slots are empty).
+
 F13 - get state info. This one also combines the data from all IFSes, but is a bit more complex than the above. For the "state" field, if
       the last-used IFS is reporting a state other than OK, its state is returned. Otherwise, if any other IFS is doing so, the lowest-
       numbered IFS's state that isn't OK is reported. If all present IFSes report OK (or no IFSes are attached), reports OK. Chan is reported
       from the last-used IFS.
+      
+F14 - get stall info. The data from all IFSes will be combined.
+
+F15 - reset drivers. The command will be sent to all IFSes. If all give the same response, it will be returned to the printer; otherwise all
+      responses will be sent to the printer. Empty responses are excluded from this.
+      
+F18 - release all channels. Same as F15.
+
+F19 - get firmware info. The command will be sent to all IFSes, and all responses will be passed to the printer.
+
+F21 - get odometer info. The data from all IFSes will be combined.
+
+F22 - get inserted channels info. The data from all IFSes will be combined.
 
 F24 - clamp a spool. This one has the standard behavior for a C-containing command on the target IFS, but it additionally sends F18 (release
       all channels) command to every IFS other than the target one.
       
-F37 - reboot and enter firmware update mode. Firmware update is not supported in splitter mode (and not recommended in passthrough mode;
-      connect directly to the printer for firmware updates), so running this command is essentially just a "brick my IFS" command. Note
-      that if you do so somehow (eg. via Z2), you can unbrick it by updating its firmware from the native screen.
+F37 - reboot and enter firmware update mode. This is not supported while in splitter mode, so it will fail. It might work in passthrough mode,
+      but it's safest to connect directly to the printer for firmware updates.
+      
+F40 - get stall counts. The data from all IFSes will be combined.
 
 -= Custom Commands =-
+
+These commands can be run even when in passthrough mode. However, as a safety precaution, they will be ignored unless at least three seconds
+have passed since any data was received from the printer (excluding other custom commands).
 
 Z0 - Enable or disable passthrough mode (disable all splitter actions and pass communications directly between printer and one IFS).
   I - Which IFS to passthrough to. Set to -1 to disable passthrough mode.
   
   Example: Z0 I1  [Activate passthrough mode to the second IFS]
-  WARNING: When disabling passthrough mode you must specifically send exactly "Z0 I-1". Any other variation will be ignored. All other
-           commands besides "Z0 I-1" are ignored (and passed through) when in passthrough mode.
            
 Z1 - Get info about splitter firmware version and hardware.
 
 Z2 - Send a command directly to an IFS. The response will be sent back to the printer unmodified. NOTE - there is no security against sending
      F37 via Z2!
-  I - Which IFS to send the command to. If omitted, sends to the most recently used IFS.
+  I - Which IFS to send the command to. If omitted, sends to the most recently used IFS (or IFS 0 if no IFS has been used yet).
   [Any other params, including a second I param if present, is interpreted as part of the command to pass on]
   
   Example: Z0 I3 F24 C2  [Send command "F24 C2" to the fourth IFS]
+  
+Z99 - Terminate splitter firmware. This will end the Micropython script. This may be desirable if you are trying to update the splitter
+      firmware, or copy log files from it. You will need to restart the RP2040 (either by the Reset button, via a debug console, or by
+      power cycling) in order for the firmware to begin operating again.

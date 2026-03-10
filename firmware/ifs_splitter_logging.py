@@ -1,14 +1,14 @@
 import time
 import ifs_splitter_system_consts as CONSTS
-import ifs_splitter_user_consts as USER_CONSTS
 
 class IFSSplitterLogging:
-    def __init__(self):
+    def __init__(self, config):
+        self.config = config
         self.last_entry_time = time.ticks_ms()
         self.log_queue = []
 
     def log(self, line):
-        if USER_CONSTS.LOGGING:
+        if self.config.logging:
             self.last_entry_time = time.ticks_ms()
             self.log_queue.append(line)
             if len(self.log_queue) >= CONSTS.LOG_FLUSH_COUNT:
@@ -20,5 +20,5 @@ class IFSSplitterLogging:
                 self.flush_logs()
 
     def flush_logs(self):
-        if USER_CONSTS.LOGGING:
+        if self.config.logging:
             self.log_queue = []

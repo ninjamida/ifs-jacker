@@ -1,23 +1,23 @@
 from machine import UART, Pin
 import time
 import ifs_splitter_system_consts as CONSTS
-import ifs_splitter_user_consts as USER_CONSTS
 
 class IFSSplitterSerialComms:
-    def __init__(self):
+    def __init__(self, config):
+        self.config = config
         self.en_pins_ifs = []
 
         self.listen_ifs = 0
 
-        self.uart_printer = UART(USER_CONSTS.PRINTER_UART, baudrate=CONSTS.UART_BAUD, bits=CONSTS.UART_BITS,
-                            parity=CONSTS.UART_PARITY, stop=CONSTS.UART_STOP_BITS, tx=USER_CONSTS.PRINTER_TX_PIN,
-                            rx=USER_CONSTS.PRINTER_RX_PIN)
-        self.en_pin_printer = Pin(USER_CONSTS.PRINTER_EN_PIN, Pin.OUT, value=0)
-        self.uart_ifs = UART(USER_CONSTS.IFS_UART, baudrate=CONSTS.UART_BAUD, bits=CONSTS.UART_BITS, parity=CONSTS.UART_PARITY,
-                        stop=CONSTS.UART_STOP_BITS, tx=USER_CONSTS.IFS_TX_PIN, rx=USER_CONSTS.IFS_RX_PIN)
+        self.uart_printer = UART(self.config.printer_uart, baudrate=CONSTS.UART_BAUD, bits=CONSTS.UART_BITS,
+                            parity=CONSTS.UART_PARITY, stop=CONSTS.UART_STOP_BITS, tx=self.config.printer_tx_pin,
+                            rx=self.config.printer_rx_pin)
+        self.en_pin_printer = Pin(self.config.printer_en_pin, Pin.OUT, value=0)
+        self.uart_ifs = UART(self.config.ifs_uart, baudrate=CONSTS.UART_BAUD, bits=CONSTS.UART_BITS, parity=CONSTS.UART_PARITY,
+                        stop=CONSTS.UART_STOP_BITS, tx=self.config.ifs_tx_pin, rx=self.config.ifs_rx_pin)
         
         first = True
-        for ifs_pin in USER_CONSTS.IFS_EN_PINS:
+        for ifs_pin in self.config.ifs_en_pins:
             self.en_pins_ifs.append(Pin(ifs_pin, Pin.OUT, value=0 if first else 1))
             first = False
 

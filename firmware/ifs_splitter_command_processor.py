@@ -1,9 +1,9 @@
 import ifs_splitter_system_consts as CONSTS
-import ifs_splitter_user_consts as USER_CONSTS
 import time
 
 class IFSSplitterCommandProcessor:
-    def __init__(self, serial, threadcomm, threadcomm_id, console_threadcomm_id):
+    def __init__(self, config, serial, threadcomm, threadcomm_id, console_threadcomm_id):
+        self.config = config
         self.serial = serial
         self.threadcomm = threadcomm
         self.threadcomm_id = threadcomm_id
@@ -18,7 +18,7 @@ class IFSSplitterCommandProcessor:
         self.terminate = False
         self.is_running = False
 
-        self.passthrough_target = USER_CONSTS.INITIAL_PASSTHROUGH_TARGET
+        self.passthrough_target = self.config.initial_passthrough_target
         self.passthrough_z_command_enable_time = time.ticks_ms()
 
     def send(self, ifs_index, message, encode=True, linebreak=None, set_listen_ifs=True):
@@ -364,7 +364,7 @@ class IFSSplitterCommandProcessor:
         
     def process_Z2(self, elements, send_commands, responses):
         if len(elements) < 2:
-            responses[0] = 'Z1 error. No params provided'
+            responses[0] = 'Z2 error. No params provided'
             return
         try:
             target_ifs = -1

@@ -2,7 +2,8 @@ import ifs_splitter_system_consts as CONSTS
 import _thread
 
 class IFSSplitterThreadComms:    
-    def __init__(self):
+    def __init__(self, config):
+        self.config = config
         self.channel_data = []
         self.channel_lock = []
         for i in range(CONSTS.THREADCOMM_CHANNELS):

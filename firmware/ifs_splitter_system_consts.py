@@ -33,3 +33,4 @@ PASSTHROUGH_MINIMUM_SILENCE_BEFORE_Z_COMMAND = 3 # In passthrough mode, Z comman
 
 # Misc settings / consts
 IFS_FFS_STATE_OK = 5
+USER_SETTINGS_FILENAME = "ifs_splitter_config.ini"
