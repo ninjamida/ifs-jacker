@@ -36,9 +36,16 @@ class IFSSplitterConsole:
                     console_input = self.check_input()
                 if console_input != None:
                     self.threadcomm.send(self.main_threadcomm_id, console_input)
-                    self.logging.log(f"{CONSTS.CONSOLE_INPUT_PREFIX}  {line}")
-            except:
-                pass
+                    self.logging.log(f"{CONSTS.CONSOLE_INPUT_PREFIX}  {console_input}")
+                    if console_input == "Z99 F1":
+                        self.terminate = True
+            except KeyboardInterrupt:
+                raise
+            except Exception as e:
+                try:
+                    print(f"\r{CONSTS.CONSOLE_INPUT_PREFIX}  Exception {e}")
+                except:
+                    pass
         self.is_running = False
     
     def check_input(self):

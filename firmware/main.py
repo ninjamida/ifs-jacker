@@ -15,9 +15,11 @@ def main():
     processor = IFSSplitterCommandProcessor(serial, threadcomm, CONSTS.MAIN_THREADCOMM, CONSTS.CONSOLE_THREADCOMM)
     console = IFSSplitterConsole(threadcomm, CONSTS.CONSOLE_THREADCOMM, CONSTS.MAIN_THREADCOMM, logging)
     
-    _thread.start_new_thread(processor.execute, ())
-    console.execute()
+    _thread.start_new_thread(console.execute, ())
+    processor.execute()
 
     threadcomm.send(CONSTS.MAIN_THREADCOMM, "Z99")
+    while processor.is_running:
+        pass
 
 main()

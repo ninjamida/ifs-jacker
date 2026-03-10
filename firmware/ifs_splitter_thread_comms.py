@@ -10,7 +10,7 @@ class IFSSplitterThreadComms:
             self.channel_lock.append(_thread.allocate_lock())
             
     def get(self, channel):
-        self.channel_lock[channel].acquire_lock()
+        self.channel_lock[channel].acquire()
         try:
             data = self.channel_data[channel]
             if len(data) == 0:
@@ -21,7 +21,7 @@ class IFSSplitterThreadComms:
             self.channel_lock[channel].release()
             
     def send(self, channel, message):
-        self.channel_lock[channel].acquire_lock()
+        self.channel_lock[channel].acquire()
         try:
             self.channel_data[channel].append(message)
         finally:
@@ -29,5 +29,3 @@ class IFSSplitterThreadComms:
             
     def any(self, channel):
         return len(self.channel_data[channel]) > 0
-
-IFSSplitterThreadComms()

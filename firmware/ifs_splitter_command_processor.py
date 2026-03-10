@@ -30,6 +30,7 @@ class IFSSplitterCommandProcessor:
             if self.threadcomm.any(self.threadcomm_id):
                 input_data = self.threadcomm.get(self.threadcomm_id)
                 mod_input_data = input_data
+                self.threadcomm.send(self.console_threadcomm_id, f"# >> {mod_input_data}")
             elif self.serial.check_read_printer():
                 input_data = self.serial.read_printer(not is_passthrough, not is_passthrough)
                 reset_z_command_delay = True
@@ -41,8 +42,8 @@ class IFSSplitterCommandProcessor:
                             if elements[0] in self.special_instructions:
                                 input_data = input_decode
                                 reset_z_command_delay = False
-                    except:
-                        pass
+                    except (UnicodeDecodeError, IndexError):
+                        elements = None
                 if reset_z_command_delay:
                     self.passthrough_z_command_enable_time = time.ticks_add(time.ticks_ms(), CONSTS.PASSTHROUGH_MINIMUM_SILENCE_BEFORE_Z_COMMAND * 1000)
                 if isinstance(input_data, str):
