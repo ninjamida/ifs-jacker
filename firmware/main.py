@@ -21,4 +21,6 @@ def main():
     while processor.is_running or console.is_running:
         pass
 
+    logging.flush_logs()
+
 main()

@@ -10,6 +10,10 @@ CONSOLE_RESPONSE_TIMEOUT = 1 # Timeout to wait for response after sending a comm
 CONSOLE_EXTRA_RESPONSE_TIMEOUT = 0.1 # Timeout to wait after console response for further responses
 CONSOLE_INPUT_PREFIX = "  Command:" # Length should equal TIMESTAMP_DIGITS
 
+# Logging settings
+LOG_FLUSH_TIME = 15 # Flush logs if no new data for this long
+LOG_FLUSH_COUNT = 32 # FLush logs if this many unflushed logs are reached
+
 # Threadcomm settings
 THREADCOMM_CHANNELS = 2
 MAIN_THREADCOMM = 0

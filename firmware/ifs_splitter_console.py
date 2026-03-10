@@ -46,6 +46,7 @@ class IFSSplitterConsole:
                     print(f"\r{CONSTS.CONSOLE_INPUT_PREFIX}  Exception {e}")
                 except:
                     pass
+            self.logging.check_log_flush_time()
         self.is_running = False
     
     def check_input(self):
