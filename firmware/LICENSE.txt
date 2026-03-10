@@ -1,0 +1,12 @@
+This software is licensed under the PolyForm Noncommercial License 1.0.0.
+https://polyformproject.org/licenses/noncommercial/1.0.0/
+
+Additional Permission:
+Notwithstanding the "Non-commercial" limitation in the license above, the Licensor hereby grants
+you the additional right to use, modify, and internally run the software for Internal Business
+Purpose (as defined in the PolyForm Internal Use License 1.0.0).
+https://polyformproject.org/licenses/internal-use/1.0.0/
+
+This permission does not grant any right to sell the software, include it in a paid product/
+service, or distribute it for commercial use. Any redistributed versions of this software must
+include this notice.
