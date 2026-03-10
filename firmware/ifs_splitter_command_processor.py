@@ -35,10 +35,17 @@ class IFSSplitterCommandProcessor:
             input_data = None
             elements = None
             is_passthrough = self.passthrough_target >= 0
+
             if self.threadcomm.any(self.threadcomm_id):
                 input_data = self.threadcomm.get(self.threadcomm_id)
                 mod_input_data = input_data
                 self.threadcomm.send(self.console_threadcomm_id, f"# >> {mod_input_data}")
+                if is_passthrough:
+                    if input_data.startswith("Z"):
+                        elements = input_data.split()
+                    else:
+                        self.threadcomm.send(self.console_threadcomm_id, "# << Splitter unit is in passthrough mode. Commands from console other than Z commands are ignored.")
+                        input_data = None
             elif self.serial.check_read_printer():
                 input_data = self.serial.read_printer(not is_passthrough, not is_passthrough)
                 if is_passthrough:
@@ -294,12 +301,11 @@ class IFSSplitterCommandProcessor:
         self.serial.set_listen_ifs()
         
     def process_Z0(self, elements, send_commands, responses):
-        global passthrough_target
         ifs_index = -1
         for e in elements:
             if e.startswith('I'):
                 ifs_index = int(e[1:])
-        passthrough_target = ifs_index
+        self.passthrough_target = ifs_index
         if ifs_index >= 0:
             responses[0] = f"Z0 ok. Passthrough mode to IFS {ifs_index} active"
         else:
