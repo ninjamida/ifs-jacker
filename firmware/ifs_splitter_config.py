@@ -30,6 +30,39 @@ class IFSSplitterConfig:
                 failed_vars += [attr]
         return failed_vars
     
+    def set_from_string(self, option, value):
+        option = option.lower()
+        setting_type = self.CONFIG_PARAMS.get(option, None)
+        if setting_type != None:
+            set_value = None
+            if setting_type == 'int':
+                try:
+                    set_value = int(value)
+                except (ValueError, TypeError):
+                    pass
+            if setting_type == 'bool':
+                try:
+                    set_value = (value.lower() == 'true') or int(value) != 0
+                except (ValueError, TypeError):
+                    set_value = False
+            if setting_type == 'str':
+                set_value = value
+            if setting_type == 'list-int':
+                try:
+                    set_value = [int(element.strip()) for element in value.split(',')]
+                except (ValueError, TypeError):
+                    pass
+            if set_value != None:
+                setattr(self, option, set_value)
+                return True
+        return False
+
+    def get_all_settings(self):
+        results = []
+        for key in self.CONFIG_PARAMS.keys():
+            results.append(f"{key}: {getattr(self, key)}")
+        return ' '.join(results)
+    
     def load_file(self):
         ini_dic = {}
         try:
@@ -40,30 +73,9 @@ class IFSSplitterConfig:
                         continue
                     elements = line.split('=', 1)
                     if len(elements) == 2:
-                        ini_dic[elements[0].strip().lower()] = elements[1].strip()
+                        ini_dic[elements[0].strip()] = elements[1].strip()
             for key, value in ini_dic.items():
-                setting_type = self.CONFIG_PARAMS.get(key, None)
-                set_value = None
-                print(f"{key}:{value}:{setting_type}")
-                if setting_type == 'int':
-                    try:
-                        set_value = int(value)
-                    except (ValueError, TypeError):
-                        pass
-                if setting_type == 'bool':
-                    try:
-                        set_value = (value.lower() == 'true') or int(value) != 0
-                    except (ValueError, TypeError):
-                        pass
-                if setting_type == 'str':
-                    set_value = value
-                if setting_type == 'list-int':
-                    try:
-                        set_value = [int(element.strip()) for element in value.split(',')]
-                    except (ValueError, TypeError):
-                        pass
-                if set_value != None:
-                    setattr(self, key, set_value)
+                self.set_from_string(key, value)
         except OSError:
             pass
 
@@ -71,7 +83,7 @@ class IFSSplitterConfig:
         need_to_save = list(self.CONFIG_PARAMS.keys())
         try:
             with open(CONSTS.USER_SETTINGS_FILENAME, 'r') as f:
-                lines = f.read()
+                lines = f.readlines()
         except:
             lines = []
 
@@ -79,7 +91,7 @@ class IFSSplitterConfig:
             for line in lines:
                 line = line.strip()
                 for key in need_to_save:
-                    if line.startswith(key + '='):
+                    if line.lower().startswith(key.lower() + '='):
                         attr = getattr(self, key)
                         if self.CONFIG_PARAMS[key].startswith('list'):
                             new_value = ','.join([str(item) for item in attr])
@@ -87,7 +99,9 @@ class IFSSplitterConfig:
                             new_value = str(attr)
                         line = line[:len(key) + 1] + new_value
                         need_to_save.remove(key)
-                print(line, file=f)
+                if not line.endswith('\n'):
+                    line += '\n'
+                f.write(line)
             if len(need_to_save) > 0:
                 if len(lines) > 0:
                     print('', file=f)
@@ -97,5 +111,5 @@ class IFSSplitterConfig:
                         new_value = ','.join([str(item) for item in attr])
                     else:
                         new_value = str(attr)
-                    line = key.upper() + '=' + new_value
-                    print(line, file=f)
+                    line = key.upper() + '=' + new_value + '\n'
+                    f.write(line)

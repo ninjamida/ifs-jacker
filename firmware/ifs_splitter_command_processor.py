@@ -9,6 +9,8 @@ class IFSSplitterCommandProcessor:
         self.threadcomm_id = threadcomm_id
         self.console_threadcomm_id = console_threadcomm_id
 
+        self.reboot_flag = False
+
         self.special_instructions = [
             name.replace("process_", "", 1)
             for name in dir(self)
@@ -361,10 +363,51 @@ class IFSSplitterCommandProcessor:
         unit_info['supported_ifs_count'] = str(self.serial.get_ifs_count())
         unit_info['listen_ifs'] = str(self.serial.get_listen_ifs())
         responses[0] = 'Z1 ok. ' + ' '.join([f"{label}: \"{data}\"" for label, data in unit_info.items()])
-        
+
     def process_Z2(self, elements, send_commands, responses):
+        responses[0] = 'Z2 ok. ' + self.config.get_all_settings()
+    
+    def process_Z3(self, elements, send_commands, responses):
+        success = []
+        fail = []
+        for element in elements[1:]:
+            params = element.split('=', 1)
+            if len(params) < 2:
+                fail.append(element)
+                continue
+
+            if self.config.set_from_string(params[0], params[1]):
+                success.append(params[0])
+            else:
+                fail.append(params[0])
+
+        if len(success) > 0:
+            self.config.save_file()
+            self.terminate = True
+            self.reboot_flag = True
+            self.threadcomm.send(self.console_threadcomm_id, "Z99")
+
+        if len(success) == 0 and len(fail) == 0:
+            responses[0] = "Z3 error. No params provided"
+        else:
+            if len(fail) > 0:
+                result = "Z3 error."
+            else:
+                result = "Z3 ok."
+            if len(success) > 0:
+                result += " Successful:"
+            for param in success:
+                result += f" {param}"
+            if len(fail) > 0:
+                result += "  Failed:"
+            for param in fail:
+                result += f" {param}"
+            responses[0] = result
+
+        
+    def process_Z98(self, elements, send_commands, responses):
         if len(elements) < 2:
-            responses[0] = 'Z2 error. No params provided'
+            responses[0] = 'Z98 error. No params provided'
             return
         try:
             target_ifs = -1
@@ -382,8 +425,15 @@ class IFSSplitterCommandProcessor:
             for i in range(len(send_commands)):
                 send_commands[i] = None
                 responses[i] = None
-            responses[0] = f"Z2 error. Exception was raised, type {e.__class__.__name__}"
+            responses[0] = f"Z98 error. Exception was raised, type {e.__class__.__name__}"
 
     def process_Z99(self, elements, send_commands, responses):
         self.terminate = True
-        responses[0] = "Z99 ok. Terminating printer interaction thread"
+        self.reboot_flag = True
+        for element in elements[1:]:
+            if element == 'R0':
+                self.reboot_flag = False
+        if self.reboot_flag:
+            responses[0] = "Z99 ok. Restarting splitter firmware"
+        else:
+            responses[0] = "Z99 ok. Terminating splitter firmware"

@@ -5,9 +5,13 @@ from ifs_splitter_thread_comms import IFSSplitterThreadComms
 from ifs_splitter_serial_comms import IFSSplitterSerialComms
 from ifs_splitter_command_processor import IFSSplitterCommandProcessor
 from ifs_splitter_console import IFSSplitterConsole
-import _thread
+import _thread, machine
 
-def main():
+reboot_flag = False
+
+def execute():
+    global reboot_flag
+
     config = IFSSplitterConfig()
     config.load_file()
 
@@ -26,5 +30,11 @@ def main():
         pass
 
     logging.flush_logs()
+    reboot_flag = processor.reboot_flag
+
+def main():
+    execute()
+    if reboot_flag:
+        machine.reset()
 
 main()

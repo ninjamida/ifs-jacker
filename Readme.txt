@@ -3,16 +3,15 @@ This is still a work in progress. It is NOT ready for use yet.
 Proper wiring instructions / etc will come later. In the meantime:
 - The code is designed for a RP2040 Zero or Raspberry Pi Pico controller (clone RP2040 Zeros should work fine, I developed this on a clone)
 - You will need a MAX3485 per IFS, plus one extra for the connection to the printer: https://www.aliexpress.com/item/1005008338314594.html
+- Note that A/B on the MAX3485 and A/B on the IFS / printer are inverted. So connect the MAX3485's A to the IFS's B, and vice versa.
 - I also recommend a 24V->5V DC converter, that way you can power everything off a single input (which may even be the printer's IFS port,
   if you aren't attaching too many IFSes)
-
-You can change most of these ports by modifying the code (and you'll need to make a slight tweak to it if you want more than two IFSes),
-but to use the code as written, connect:
+  
+GPIO pinouts can be configured in ifs_splitter_config.ini; defaults are as follows:
 - Printer's UART to pins 4, 5
 - Printer's EN to pin 3
 - IFS UARTs (all of them wired in parallel) to pins 0, 1
 - IFS ENs to pins 8 and 9
-- Also, A/B for the RS485 connection are opposite on the MAX3485 and the printer/IFS
 
 ==============
 -= Commands =-
@@ -83,12 +82,20 @@ Z0 - Enable or disable passthrough mode (disable all splitter actions and pass c
            
 Z1 - Get info about splitter firmware version and hardware.
 
-Z2 - Send a command directly to an IFS. The response will be sent back to the printer unmodified. NOTE - there is no security against sending
-     F37 via Z2!
+Z2 - Get user settings.
+
+Z3 - Change user settings. Follow this with [name]=[value]. You can specify multiple params. Do not insert spaces next to =, and if an item is
+     a list, specify the values comma-seperated without spaces. WARNING: The splitter unit will reboot after this command (unless it fails to
+     change any settings).
+
+    Example: Z3 logging=false initial_passthrough_target=-1  [Disable logging, and boot in splitter mode (no initial passthrough)]
+
+Z98 - Send a command directly to an IFS. The response will be sent back to the printer unmodified. NOTE - there is no security against sending
+     F37 via Z98!
   I - Which IFS to send the command to. If omitted, sends to the most recently used IFS (or IFS 0 if no IFS has been used yet).
   [Any other params, including a second I param if present, is interpreted as part of the command to pass on]
   
-  Example: Z0 I3 F24 C2  [Send command "F24 C2" to the fourth IFS]
+  Example: Z98 I3 F24 C2  [Send command "F24 C2" to the fourth IFS]
   
 Z99 - Terminate splitter firmware. This will end the Micropython script. This may be desirable if you are trying to update the splitter
       firmware, or copy log files from it. You will need to restart the RP2040 (either by the Reset button, via a debug console, or by

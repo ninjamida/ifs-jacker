@@ -27,10 +27,12 @@ class IFSSplitterConsole:
                     while self.threadcomm.any(self.threadcomm_id):
                         line = self.threadcomm.get(self.threadcomm_id)
                         line_text = f"{time.ticks_ms():0{CONSTS.TIMESTAMP_DIGITS}d}  {line}"
-                        print(line_text)
-                        self.logging.log(line_text)
-                        if line.startswith('^^<< Z99 ok.'):
+                        if line != "Z99":
+                            print(line_text)
+                            self.logging.log(line_text)
+                        if line == "Z99" or line.startswith('^^<< Z99 ok.'):
                             self.terminate = True
+                            print()
                     self.need_refresh_prompt = True
 
                 if not self.terminate:
@@ -38,7 +40,7 @@ class IFSSplitterConsole:
                 if console_input != None:
                     self.threadcomm.send(self.main_threadcomm_id, console_input)
                     self.logging.log(f"{CONSTS.CONSOLE_INPUT_PREFIX}  {console_input}")
-                    if console_input == "Z99 F1":
+                    if console_input.startswith("Z99") and "F1" in console_input:
                         self.terminate = True
             except KeyboardInterrupt:
                 raise
