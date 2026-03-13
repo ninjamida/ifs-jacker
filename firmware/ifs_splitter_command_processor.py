@@ -113,6 +113,8 @@ class IFSSplitterCommandProcessor:
         responses = [None] * ifs_count        
 
         instruction = elements[0]
+        old_color_index = None
+        new_color_index = None
         if instruction.startswith('Z') or instruction in self.special_instructions:
             target_cmd = f"process_{instruction}"
             if hasattr(self, target_cmd) and callable(getattr(self, target_cmd)):
@@ -126,9 +128,10 @@ class IFSSplitterCommandProcessor:
             for i in range(len(elements)):
                 this_element = elements[i]
                 if this_element.startswith('C'):
-                    color_index = int(this_element[1:])
-                    target_ifs = color_index // 4
-                    elements[i] = "C" + str(color_index % 4)
+                    old_color_index = int(this_element[1:]) - 1
+                    new_color_index = old_color_index % 4
+                    target_ifs = old_color_index // 4
+                    elements[i] = "C" + str(new_color_index + 1)
                     break
             send_commands[target_ifs] = ' '.join(elements)
             self.serial.set_listen_ifs(target_ifs, True)
@@ -150,6 +153,9 @@ class IFSSplitterCommandProcessor:
         if response_count == 1:
             for r in responses:
                 if r != None:
+                    if isinstance(r, str) and old_color_index != None and new_color_index != None:
+                        r = r.replace(f'chan {new_color_index + 1}', f'chan {old_color_index + 1}')
+                        r = r.replace(f'channel {new_color_index + 1}', f'chan {old_color_index + 1}')
                     self.send(-1, r)
         elif response_count > 1:
             combined_response = '|'.join([f"IFS{i}:{responses[i]}" for i, r in enumerate(responses) if r])
@@ -295,15 +301,19 @@ class IFSSplitterCommandProcessor:
         for i in range(len(elements)):
             this_element = elements[i]
             if this_element.startswith('C'):
-                color_index = int(this_element[1:])
-                target_ifs = (color_index - 1) // 4
-                elements[i] = "C" + str(((color_index - 1) % 4) + 1)
+                old_color_index = int(this_element[1:]) - 1
+                new_color_index = old_color_index % 4
+                target_ifs = (old_color_index) // 4
+                elements[i] = "C" + str(new_color_index + 1)
                 break
+
         for i in range(len(send_commands)):
             if i == target_ifs:
-                send_commands[i] = ' '.join(elements)
+                self.send(i, ' '.join(elements), set_listen_ifs=False)
             else:
-                send_commands[i] = 'F18'
+                self.send(i, 'F18', set_listen_ifs=False)
+            responses[i] = self.read_ifs()
+
         self.serial.set_listen_ifs(target_ifs)
 
         # If all other IFSes respond "F18 ok." or don't respond (presumably not attached), we discard their responses
@@ -315,7 +325,7 @@ class IFSSplitterCommandProcessor:
                     break
 
         if responses[target_ifs] != None:
-            responses[target_ifs] = responses[target_ifs].replace(f"chan {((color_index - 1) % 4) + 1}.", f"chan {color_index}.")
+            responses[target_ifs] = responses[target_ifs].replace(f"chan {new_color_index + 1}.", f"chan {old_color_index + 1}.")
             
         if not any_abnormal_response:
             for i in range(len(responses)):
