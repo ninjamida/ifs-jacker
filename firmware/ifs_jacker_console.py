@@ -1,7 +1,7 @@
 import time, sys, uselect
-import ifs_splitter_system_consts as CONSTS
+import ifs_jacker_system_consts as CONSTS
 
-class IFSSplitterConsole:
+class IFSJackerConsole:
     def __init__(self, config, threadcomm, threadcomm_id, main_threadcomm_id, logging):
         self.config = config
         self.terminate = False

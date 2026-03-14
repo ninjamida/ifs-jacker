@@ -1,7 +1,7 @@
-import ifs_splitter_system_consts as CONSTS
+import ifs_jacker_system_consts as CONSTS
 import time
 
-class IFSSplitterCommandProcessor:
+class IFSJackerCommandProcessor:
     def __init__(self, config, serial, threadcomm, threadcomm_id, console_threadcomm_id):
         self.config = config
         self.serial = serial

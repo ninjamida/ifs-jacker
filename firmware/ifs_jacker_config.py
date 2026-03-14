@@ -1,6 +1,6 @@
-import ifs_splitter_system_consts as CONSTS
+import ifs_jacker_system_consts as CONSTS
 
-class IFSSplitterConfig:
+class IFSJackerConfig:
     CONFIG_PARAMS = {
         'printer_uart': 'int',
         'printer_tx_pin': 'int',

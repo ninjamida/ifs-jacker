@@ -1,7 +1,7 @@
 # Software info
-SCRIPT_IDENTIFIER = 'IFS Splitter'
+SCRIPT_IDENTIFIER = 'IFS Jacker'
 SCRIPT_AUTHOR = 'ninjamida'
-SCRIPT_VERSION = '0.01'
+SCRIPT_VERSION = '0.10'
 SCRIPT_HARDWARE = 'RP2040 Zero'
 
 # Console settings
@@ -33,4 +33,4 @@ PASSTHROUGH_MINIMUM_SILENCE_BEFORE_Z_COMMAND = 3 # In passthrough mode, Z comman
 
 # Misc settings / consts
 IFS_FFS_STATE_OK = 5
-USER_SETTINGS_FILENAME = "ifs_splitter_config.ini"
+USER_SETTINGS_FILENAME = "ifs_jacker_config.ini"

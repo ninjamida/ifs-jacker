@@ -1,8 +1,8 @@
 from machine import UART, Pin
 import time
-import ifs_splitter_system_consts as CONSTS
+import ifs_jacker_system_consts as CONSTS
 
-class IFSSplitterSerialComms:
+class IFSJackerSerialComms:
     def __init__(self, config):
         self.config = config
         self.en_pins_ifs = []

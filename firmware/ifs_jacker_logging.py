@@ -1,7 +1,7 @@
 import time
-import ifs_splitter_system_consts as CONSTS
+import ifs_jacker_system_consts as CONSTS
 
-class IFSSplitterLogging:
+class IFSJackerLogging:
     def __init__(self, config):
         self.config = config
         self.last_entry_time = time.ticks_ms()

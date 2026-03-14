@@ -1,10 +1,10 @@
-import ifs_splitter_system_consts as CONSTS
-from ifs_splitter_config import IFSSplitterConfig
-from ifs_splitter_logging import IFSSplitterLogging
-from ifs_splitter_thread_comms import IFSSplitterThreadComms
-from ifs_splitter_serial_comms import IFSSplitterSerialComms
-from ifs_splitter_command_processor import IFSSplitterCommandProcessor
-from ifs_splitter_console import IFSSplitterConsole
+import ifs_jacker_system_consts as CONSTS
+from ifs_jacker_config import IFSJackerConfig
+from ifs_jacker_logging import IFSJackerLogging
+from ifs_jacker_thread_comms import IFSJackerThreadComms
+from ifs_jacker_serial_comms import IFSJackerSerialComms
+from ifs_jacker_command_processor import IFSJackerCommandProcessor
+from ifs_jacker_console import IFSJackerConsole
 import _thread, machine
 
 reboot_flag = False
@@ -12,14 +12,14 @@ reboot_flag = False
 def execute():
     global reboot_flag
 
-    config = IFSSplitterConfig()
+    config = IFSJackerConfig()
     config.load_file()
 
-    logging = IFSSplitterLogging(config)
-    threadcomm = IFSSplitterThreadComms(config)
-    serial = IFSSplitterSerialComms(config)
-    processor = IFSSplitterCommandProcessor(config, serial, threadcomm, CONSTS.MAIN_THREADCOMM, CONSTS.CONSOLE_THREADCOMM)
-    console = IFSSplitterConsole(config, threadcomm, CONSTS.CONSOLE_THREADCOMM, CONSTS.MAIN_THREADCOMM, logging)
+    logging = IFSJackerLogging(config)
+    threadcomm = IFSJackerThreadComms(config)
+    serial = IFSJackerSerialComms(config)
+    processor = IFSJackerCommandProcessor(config, serial, threadcomm, CONSTS.MAIN_THREADCOMM, CONSTS.CONSOLE_THREADCOMM)
+    console = IFSJackerConsole(config, threadcomm, CONSTS.CONSOLE_THREADCOMM, CONSTS.MAIN_THREADCOMM, logging)
     
     _thread.start_new_thread(console.execute, ())
     processor.execute()
