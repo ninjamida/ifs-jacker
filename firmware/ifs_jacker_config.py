@@ -15,6 +15,11 @@ class IFSJackerConfig:
         'initial_passthrough_target': 'int'
     } # Valid types: int, list-int, bool, str
 
+    NEED_REBOOT_OPTIONS = [
+        'printer_uart', 'printer_tx_pin', 'printer_rx_pin',
+        'ifs_uart', 'ifs_tx_pin', 'ifs_rx_pin', 'ifs_en_pins'
+    ]
+
     def __init__(self):
         for attr in self.CONFIG_PARAMS.keys():
             setattr(self, attr, None)
@@ -29,6 +34,9 @@ class IFSJackerConfig:
             if getattr(self, attr) == None:
                 failed_vars += [attr]
         return failed_vars
+    
+    def is_reboot_needed_after_changing(self, option_name):
+        return option_name.lower() in self.NEED_REBOOT_OPTIONS
     
     def set_from_string(self, option, value):
         option = option.lower()

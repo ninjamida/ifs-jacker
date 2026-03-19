@@ -62,7 +62,7 @@ class IFSJackerCommandProcessor:
                     if input_data.startswith("Z"):
                         elements = input_data.split()
                     else:
-                        self.threadcomm.send(self.console_threadcomm_id, "# << Splitter unit is in passthrough mode. Commands from console other than Z commands are ignored.")
+                        self.threadcomm.send(self.console_threadcomm_id, "# << IFS Jacker is in passthrough mode. Commands from console other than Z commands are ignored.")
                         input_data = None
             elif self.serial.check_read_printer():
                 input_data = self.read_printer(not is_passthrough, not is_passthrough)
@@ -393,9 +393,13 @@ class IFSJackerCommandProcessor:
 
         if len(success) > 0:
             self.config.save_file()
-            self.terminate = True
-            self.reboot_flag = True
-            self.threadcomm.send(self.console_threadcomm_id, "Z99")
+            if any(self.config.is_reboot_needed_after_changing(option) for option in success):
+                self.terminate = True
+                self.reboot_flag = True
+                self.threadcomm.send(self.console_threadcomm_id, "Z99")
+                reboot_from_option_change = True
+            else:
+                reboot_from_option_change = False
 
         if len(success) == 0 and len(fail) == 0:
             responses[0] = "Z3 error. No params provided"
@@ -403,7 +407,10 @@ class IFSJackerCommandProcessor:
             if len(fail) > 0:
                 result = "Z3 error."
             else:
-                result = "Z3 ok."
+                if reboot_from_option_change:
+                    result = "Z3 ok. IFS Jacker rebooting"
+                else:
+                    result = "Z3 ok."
             if len(success) > 0:
                 result += " Successful:"
             for param in success:
@@ -444,6 +451,6 @@ class IFSJackerCommandProcessor:
             if element == 'R0':
                 self.reboot_flag = False
         if self.reboot_flag:
-            responses[0] = "Z99 ok. Restarting splitter firmware"
+            responses[0] = "Z99 ok. Restarting IFS Jacker firmware"
         else:
-            responses[0] = "Z99 ok. Terminating splitter firmware"
+            responses[0] = "Z99 ok. Terminating IFS Jacker firmware"
