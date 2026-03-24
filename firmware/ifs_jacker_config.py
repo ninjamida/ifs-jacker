@@ -84,8 +84,8 @@ class IFSJackerConfig:
                         ini_dic[elements[0].strip()] = elements[1].strip()
             for key, value in ini_dic.items():
                 self.set_from_string(key, value)
-        except OSError:
-            pass
+        except OSError as e:
+            print(f"Config could not be loaded: {e}")
 
     def save_file(self):
         need_to_save = list(self.CONFIG_PARAMS.keys())
