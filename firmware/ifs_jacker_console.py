@@ -2,7 +2,7 @@ import time, sys, uselect
 import ifs_jacker_system_consts as CONSTS
 
 class IFSJackerConsole:
-    def __init__(self, config, threadcomm, threadcomm_id, main_threadcomm_id, logging):
+    def __init__(self, config, threadcomm, threadcomm_id, main_threadcomm_id):
         self.config = config
         self.terminate = False
         self.input_buffer = ""
@@ -12,7 +12,6 @@ class IFSJackerConsole:
         self.poller.register(sys.stdin, uselect.POLLIN)
 
         self.threadcomm = threadcomm
-        self.logging = logging
         self.threadcomm_id = threadcomm_id
         self.main_threadcomm_id = main_threadcomm_id
 
@@ -29,7 +28,6 @@ class IFSJackerConsole:
                         line_text = f"{time.ticks_ms():0{CONSTS.TIMESTAMP_DIGITS}d}  {line}"
                         if line != "Z99":
                             print(line_text)
-                            self.logging.log(line_text)
                         if line == "Z99" or line.startswith('^^<< Z99 ok.'):
                             self.terminate = True
                             print()
@@ -39,7 +37,6 @@ class IFSJackerConsole:
                     console_input = self.check_input()
                 if console_input != None:
                     self.threadcomm.send(self.main_threadcomm_id, console_input)
-                    self.logging.log(f"{CONSTS.CONSOLE_INPUT_PREFIX}  {console_input}")
                     if console_input.startswith("Z99") and "F1" in console_input:
                         self.terminate = True
             except KeyboardInterrupt:
@@ -49,7 +46,6 @@ class IFSJackerConsole:
                     print(f"\r{CONSTS.CONSOLE_INPUT_PREFIX}  Exception {e}")
                 except:
                     pass
-            self.logging.check_log_flush_time()
         self.is_running = False
     
     def check_input(self):

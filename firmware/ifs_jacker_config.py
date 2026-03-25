@@ -10,8 +10,6 @@ class IFSJackerConfig:
         'ifs_tx_pin': 'int',
         'ifs_rx_pin': 'int',
         'ifs_en_pins': 'list-int',
-        'logging': 'bool',
-        'log_file_max_size': 'int',
         'initial_passthrough_target': 'int'
     } # Valid types: int, list-int, bool, str
 
@@ -24,8 +22,6 @@ class IFSJackerConfig:
         for attr in self.CONFIG_PARAMS.keys():
             setattr(self, attr, None)
 
-        self.logging = False
-        self.log_max_file_size = 128 * 1024
         self.initial_passthrough_target = 0
 
     def get_missing_options(self):
