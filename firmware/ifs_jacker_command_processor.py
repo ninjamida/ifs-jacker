@@ -20,6 +20,7 @@ class IFSJackerCommandProcessor:
         self.terminate = False
         self.is_running = False
 
+        self.total_passthrough = False
         self.passthrough_target = self.config.initial_passthrough_target
         self.passthrough_z_command_enable_time = time.ticks_ms()
 
@@ -67,20 +68,21 @@ class IFSJackerCommandProcessor:
             elif self.serial.check_read_printer():
                 input_data = self.read_printer(not is_passthrough, not is_passthrough)
                 if is_passthrough:
-                    reset_z_command_delay = True
-                    if time.ticks_diff(self.passthrough_z_command_enable_time, time.ticks_ms()) <= 0:
-                        try:
-                            if isinstance(input_data, bytes): # Which it always will be if we get to here. But this avoids an IDE "error".
-                                input_decode = str(input_data, 'utf-8')
-                            if input_decode.startswith("Z"):
-                                elements = input_decode.split()
-                                if elements[0] in self.special_instructions:
-                                    input_data = input_decode
-                                    reset_z_command_delay = False
-                        except (UnicodeDecodeError, IndexError):
-                            elements = None
-                    if reset_z_command_delay:
-                        self.passthrough_z_command_enable_time = time.ticks_add(time.ticks_ms(), CONSTS.PASSTHROUGH_MINIMUM_SILENCE_BEFORE_Z_COMMAND * 1000)
+                    if not self.total_passthrough:
+                        reset_z_command_delay = True
+                        if time.ticks_diff(self.passthrough_z_command_enable_time, time.ticks_ms()) <= 0:
+                            try:
+                                if isinstance(input_data, bytes): # Which it always will be if we get to here. But this avoids an IDE "error".
+                                    input_decode = str(input_data, 'utf-8')
+                                if input_decode.startswith("Z"):
+                                    elements = input_decode.split()
+                                    if elements[0] in self.special_instructions:
+                                        input_data = input_decode
+                                        reset_z_command_delay = False
+                            except (UnicodeDecodeError, IndexError):
+                                elements = None
+                        if reset_z_command_delay:
+                            self.passthrough_z_command_enable_time = time.ticks_add(time.ticks_ms(), CONSTS.PASSTHROUGH_MINIMUM_SILENCE_BEFORE_Z_COMMAND * 1000)
                     if isinstance(input_data, str):
                         mod_input_data = input_data.replace('\r', '\\r')
                         mod_input_data = mod_input_data.replace('\n', '\\n')
@@ -355,12 +357,19 @@ class IFSJackerCommandProcessor:
         
     def process_Z0(self, elements, send_commands, responses):
         ifs_index = -1
+        total = False
         for e in elements:
             if e.startswith('I'):
                 ifs_index = int(e[1:])
+            if e.startswith('T'):
+                total = int(e[1:]) != 0
         self.passthrough_target = ifs_index
+        self.total_passthrough = total and (ifs_index >= 0)
         if ifs_index >= 0:
-            responses[0] = f"Z0 ok. Passthrough mode to IFS {ifs_index} active"
+            if total:
+                responses[0] = f"Z0 ok. Total passthrough mode to IFS {ifs_index} active. Reboot IFS jacker or use console to deactivate"
+            else:
+                responses[0] = f"Z0 ok. Passthrough mode to IFS {ifs_index} active"
         else:
             responses[0] = f"Z0 ok. Splitter mode active"
                 
@@ -420,6 +429,10 @@ class IFSJackerCommandProcessor:
             for param in fail:
                 result += f" {param}"
             responses[0] = result
+
+
+    def process_Z4(self, elements, send_commands, responses):
+        responses[0] = 'Z4 error. Z4 can only be run from the console'
 
         
     def process_Z98(self, elements, send_commands, responses):

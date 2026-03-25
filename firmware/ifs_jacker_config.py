@@ -13,6 +13,18 @@ class IFSJackerConfig:
         'initial_passthrough_target': 'int'
     } # Valid types: int, list-int, bool, str
 
+    CONFIG_PARAMS_HUMAN_FRIENDLY = {
+        'printer_uart': 'UART index for connection to printer',
+        'printer_tx_pin': 'TX pin for connection to printer',
+        'printer_rx_pin': 'RX pin for connection to printer',
+        'printer_en_pin': 'EN pin for connection to printer',
+        'ifs_uart': 'UART index for connection to IFSes',
+        'ifs_tx_pin': 'TX pin for connection to IFSes',
+        'ifs_rx_pin': 'RX pin for connection to IFSes',
+        'ifs_en_pins': 'EN pins for connections to IFSes (comma-seperated)',
+        'initial_passthrough_target': 'Passthrough mode target IFS index at startup (-1 to start in splitter mode)'
+    }
+
     NEED_REBOOT_OPTIONS = [
         'printer_uart', 'printer_tx_pin', 'printer_rx_pin',
         'ifs_uart', 'ifs_tx_pin', 'ifs_rx_pin', 'ifs_en_pins'
@@ -33,6 +45,23 @@ class IFSJackerConfig:
     
     def is_reboot_needed_after_changing(self, option_name):
         return option_name.lower() in self.NEED_REBOOT_OPTIONS
+    
+    def configure_via_console(self, missing_only = True):
+        print("IFS Jacker configuration")
+        for attr in self.CONFIG_PARAMS.keys():
+            complete = False
+            while not complete:
+                existing_val = getattr(self, attr)
+                if existing_val == None or not missing_only:
+                    text = self.CONFIG_PARAMS_HUMAN_FRIENDLY.get(attr, f'Config option "{attr}"')
+                    if existing_val != None:
+                        text += f' (current: {existing_val})'
+                    text += ': '
+                    new_val = input(text)
+                    complete = self.set_from_string(attr, new_val)
+                    if not complete:
+                        print('Invalid input')
+        self.save_file()
     
     def set_from_string(self, option, value):
         option = option.lower()

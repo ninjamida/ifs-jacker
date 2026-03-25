@@ -14,20 +14,30 @@ def execute():
     config = IFSJackerConfig()
     config.load_file()
 
-    threadcomm = IFSJackerThreadComms(config)
-    serial = IFSJackerSerialComms(config)
-    processor = IFSJackerCommandProcessor(config, serial, threadcomm, CONSTS.MAIN_THREADCOMM, CONSTS.CONSOLE_THREADCOMM)
-    console = IFSJackerConsole(config, threadcomm, CONSTS.CONSOLE_THREADCOMM, CONSTS.MAIN_THREADCOMM)
+    try:
+        threadcomm = IFSJackerThreadComms(config)
+        serial = IFSJackerSerialComms(config)
+        processor = IFSJackerCommandProcessor(config, serial, threadcomm, CONSTS.MAIN_THREADCOMM, CONSTS.CONSOLE_THREADCOMM)
+        console = IFSJackerConsole(config, threadcomm, CONSTS.CONSOLE_THREADCOMM, CONSTS.MAIN_THREADCOMM)
+    except Exception as e:
+        print("Failed to start up. Check configuration.")
+        print("Error: {e}")
+        config.configure_via_console(False)
+        reboot_flag = True
+        return
     
     _thread.start_new_thread(console.execute, ())
     processor.execute()
 
-    threadcomm.send(CONSTS.MAIN_THREADCOMM, "Z99")
+    if (processor.total_passthrough):
+        processor.terminate = True
+    else:
+        threadcomm.send(CONSTS.MAIN_THREADCOMM, "Z99")
     threadcomm.send(CONSTS.CONSOLE_THREADCOMM, "Z99")
     while processor.is_running or console.is_running:
         pass
-    
-    reboot_flag = processor.reboot_flag
+
+    reboot_flag = processor.reboot_flag or console.reboot_flag
 
 def main():
     execute()

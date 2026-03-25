@@ -16,6 +16,7 @@ class IFSJackerConsole:
         self.main_threadcomm_id = main_threadcomm_id
 
         self.is_running = False
+        self.reboot_flag = False
     
     def execute(self):
         self.is_running = True
@@ -36,9 +37,17 @@ class IFSJackerConsole:
                 if not self.terminate:
                     console_input = self.check_input()
                 if console_input != None:
-                    self.threadcomm.send(self.main_threadcomm_id, console_input)
-                    if console_input.startswith("Z99") and "F1" in console_input:
-                        self.terminate = True
+                    if console_input.startswith("Z4 ") or console_input == "Z4":
+                        print()
+                        confirm = input("Proceed with config? IFS Jacker will reboot immediately on completion. (Y/N)")
+                        if confirm.casefold().startswith('y'):
+                            self.config.configure_via_console(False)
+                            self.terminate = True
+                            self.reboot_flag = True
+                    else:
+                        self.threadcomm.send(self.main_threadcomm_id, console_input)
+                        if console_input.startswith("Z99") and "F1" in console_input:
+                            self.terminate = True
             except KeyboardInterrupt:
                 raise
             except Exception as e:
