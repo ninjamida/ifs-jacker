@@ -195,9 +195,11 @@ class IFSJackerCommandProcessor:
     def process_F13(self, elements, send_commands, responses):
         # General state info - need to merge output
         # FFS_state: Magic numbers specifying status. Priority: (a) last-used IFS state if not 5; (b) any non-5 state; (c) 5; (d) None
+        #            7, 11, 12, 15 - these ones can also be +11 for channel 2, +22 for channel 3, +33 for channel 4, etc. Return values
+        #            that fit this pattern are adjusted accordingly.
         # silk_state: Bitwise value marking whether channels are loaded or not
         # chan: Currently active channel. 0 after reboot but not reset after F18
-        # ffs_channels_insert: Bitwise value marking channels pending autoinsert (How to cancel?)
+        # ffs_channels_insert: Bitwise value marking channels pending autoinsert
         # stall_state: Bitwise value marking channels with stall detected
         # unknown or not covered: report last used IFS's value [including jinsi_GCONF and qiehuan_GCONF], don't report if absent from last-used IFS
         result_state = CONSTS.IFS_FFS_STATE_OK
@@ -219,6 +221,8 @@ class IFSJackerCommandProcessor:
                 this_ffs_state = int(this_params.get('FFS_state', CONSTS.IFS_FFS_STATE_OK))
                 if this_ffs_state != CONSTS.IFS_FFS_STATE_OK:
                     if result_state == CONSTS.IFS_FFS_STATE_OK or i == listen_ifs:
+                        if (result_state - 7) % 11 in [0, 1, 4, 7]:
+                            result_state += 44 * i
                         result_state = this_ffs_state
                 
                 this_silk_state = this_params.get('silk_state', 0)
@@ -318,7 +322,7 @@ class IFSJackerCommandProcessor:
 
         self.serial.set_listen_ifs(target_ifs)
 
-        # If all other IFSes respond "F18 ok." or don't respond (presumably not attached), we discard their responses
+        # If all other IFSes respond "F18 ok" or don't respond (presumably not attached), we discard their responses
         any_abnormal_response = False
         for i, response in enumerate(responses):
             if i != target_ifs:
