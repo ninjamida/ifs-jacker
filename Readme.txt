@@ -1,17 +1,22 @@
 This is still a work in progress. It is NOT ready for use yet.
 
-Proper wiring instructions / etc will come later. In the meantime:
-- The code is designed for a RP2040 Zero or Raspberry Pi Pico controller (clone RP2040 Zeros should work fine, I developed this on a clone)
-- You will need a MAX3485 per IFS, plus one extra for the connection to the printer: https://www.aliexpress.com/item/1005008338314594.html
-- Note that A/B on the MAX3485 and A/B on the IFS / printer are inverted. So connect the MAX3485's A to the IFS's B, and vice versa.
-- I also recommend a 24V->5V DC converter, that way you can power everything off a single input (which may even be the printer's IFS port,
-  if you aren't attaching too many IFSes)
-  
-GPIO pinouts can be configured in ifs_splitter_config.ini; defaults are as follows:
-- Printer's UART to pins 4, 5
-- Printer's EN to pin 3
-- IFS UARTs (all of them wired in parallel) to pins 0, 1
-- IFS ENs to pins 8 and 9
+Code is written for RP2040 Zero (and by extension should be compatible with Raspberry Pi Pico). Compatibility with other boards is not
+guaranteed. It can likely be adapted to any board that supports MicroPython with some degree of effort.
+
+Connection interfaces to printer / MMU:
+- Null (output to console only)
+- UART (single device connected to UART, possibly via an automatic adapter)
+- UART + EN pin (single device connected to UART via an adapter that requires an EN pin)
+- UART + multi EN pin (multiple devices connected to single UART via adapters that require EN pins)
+
+Upstream connection can use Null, UART, or UART+EN. Downstream connection can use any of these, although Null is somewhat pointless
+except for testing purposes. (Null on the upstream side could be useful for a custom printer that connects via USB and interacts via
+console.)
+
+UART + multi EN pin may not work with all adapters. It is specifically tested with the MAX3485.
+
+At present, Flashforge AD5X is the only supported host printer, and the Flashforge IFS is the only supported MMU. This may change if
+I end up in possession of any other MMUs in the future (or if someone else decides to implement support).
 
 ==============
 -= Commands =-
