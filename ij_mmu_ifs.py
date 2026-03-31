@@ -101,29 +101,29 @@ class IJM_IFS(IJM_Text_Based):
     def translate_in_F112(self, elements: list[str]) -> dict[str, str]:
         return {'command': 'mmu_response_halt_movement'}
     
-    def translate_out_insert_filament(self, command: dict[str, str]) -> str | None:
+    def translate_out_mmu_insert_filament(self, command: dict[str, str]) -> str | None:
         return f"F10 C{int(command['channel']) + 1} L{command['length']} S{command['speed']}"
     
-    def translate_out_withdraw_filament(self, command: dict[str, str]) -> str | None:
+    def translate_out_mmu_withdraw_filament(self, command: dict[str, str]) -> str | None:
         return f"F11 C{int(command['channel']) + 1} L{command['length']} S{command['speed']}"
     
-    def translate_out_get_status(self, command: dict[str, str]) -> str | None:
+    def translate_out_mmu_get_status(self, command: dict[str, str]) -> str | None:
         return "F13"
     
-    def translate_out_reset_drivers(self, command: dict[str, str]) -> str | None:
+    def translate_out_mmu_reset_drivers(self, command: dict[str, str]) -> str | None:
         return "F15 C"
     
-    def translate_out_release_all_channels(self, command: dict[str, str]) -> str | None:
+    def translate_out_mmu_release_all_channels(self, command: dict[str, str]) -> str | None:
         return "F18"
     
-    def translate_out_mark_active_channel(self, command: dict[str, str]) -> str | None:
+    def translate_out_mmu_mark_active_channel(self, command: dict[str, str]) -> str | None:
         return f"F23 C{int(command['channel']) + 1}"
     
-    def translate_out_clamp_channel(self, command: dict[str, str]) -> str | None:
+    def translate_out_mmu_clamp_channel(self, command: dict[str, str]) -> str | None:
         return f"F24 C{int(command['channel']) + 1}"
     
-    def translate_out_release_channel(self, command: dict[str, str]) -> str | None:
+    def translate_out_mmu_release_channel(self, command: dict[str, str]) -> str | None:
         return f"F39 C{int(command['channel']) + 1}"
     
-    def translate_out_halt_movement(self, command: dict[str, str]) -> str | None:
+    def translate_out_mmu_halt_movement(self, command: dict[str, str]) -> str | None:
         return "F112"
