@@ -7,6 +7,10 @@ class IJM_Splitter(IJM_Base):
         self.build_channel_map()
         self.last_used_mmu = 0
 
+        self.friendly_name = 'Splitter'
+        for i, mmu in enumerate(self.mmu_list):
+            self.friendly_name += f'__{i}_{mmu.friendly_name}'
+
     def build_channel_map(self):
         total_channels = 0
         result = []

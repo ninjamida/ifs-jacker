@@ -164,3 +164,11 @@ class IJP_AD5X(IJP_Text_Based):
         
     def translate_out_mmu_response_halt_movement(self, elements: dict[str, str]) -> str:
         return 'F112 ok.'
+    
+    def translate_out_ij_response_get_status(self, elements: dict[str, str]) -> str:
+        result = 'Z1 ok. '
+        for key, value in elements:
+            if key == 'command':
+                continue
+            result += f' {key}: {value}'
+        return result

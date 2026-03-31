@@ -1,5 +1,8 @@
+CONSOLE_THREADED = True
+
 import time, sys, uselect
-from ij_thread_comm import IJ_Thread_Comm
+if CONSOLE_THREADED:
+    import _thread
 
 class IJ_Console:
     def __init__(self):
@@ -15,43 +18,52 @@ class IJ_Console:
         self.input_prefix = "  Command:"
         self.timestamp_digits = len(self.input_prefix)
 
-    def execute_thread(self, threadcomm: IJ_Thread_Comm, threadcomm_in: int, threadcomm_out: int):
+        if CONSOLE_THREADED:
+            self.thread_lock = _thread.allocate_lock()
+
+    def start_thread(self):
+        _thread.start_new_thread(self.execute_thread, ())
+
+    def execute_thread(self):
         self.terminate = False
         self.running = True
         while not self.terminate:
-            while threadcomm.any(threadcomm_in):
-                self.incoming.append(threadcomm.get(threadcomm_in))
             self.execute()
-            while len(self.outgoing) > 0:
-                threadcomm.send(threadcomm_out, self.outgoing.pop(0))
         self.running = False
+
+    def lock(self):
+        if CONSOLE_THREADED:
+            self.thread_lock.acquire()
+
+    def release(self):
+        if CONSOLE_THREADED:
+            self.thread_lock.release()
     
     def execute(self):
         try:
             if len(self.incoming) > 0:
                 sys.stdout.write('\r\x1b[K')
-                while len(self.incoming) > 0:
-                    line = self.incoming.pop(0)
-                    line_text = f"{time.ticks_ms():0{self.timestamp_digits}d}  {line}"
-                    print(line_text)
-                self.need_refresh_prompt = True
+                self.lock()
+                try:
+                    while len(self.incoming) > 0:
+                        line = self.incoming.pop(0)
+                        line_text = f"{time.ticks_ms():0{self.timestamp_digits}d}  {line}"
+                        print(line_text)
+                    self.need_refresh_prompt = True
+                finally:
+                    self.release()
 
             console_input = self.check_input()
             if console_input != None:
-                if console_input.startswith("Z4 ") or console_input == "Z4":
-                    print()
-                    confirm = input("Proceed with config? IFS Jacker will reboot immediately on completion. (Y/N)")
-                    if confirm.casefold().startswith('y'):
-                        raise NotImplementedError("Z4 not yet implemented in V1.x")
-                else:
+                self.lock()
+                try:
                     self.outgoing += [console_input]
+                finally:
+                    self.release()
         except KeyboardInterrupt:
             raise
         except Exception as e:
-            try:
-                print(f"\r{self.input_prefix}  Exception {e}")
-            except:
-                pass
+            print(f"\r{time.ticks_ms():0{self.timestamp_digits}d}  Exception occurred in console: {e}")
     
     def check_input(self) -> str | None:
         if self.need_refresh_prompt:

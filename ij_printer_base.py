@@ -1,4 +1,5 @@
 from ij_comm_interfaces import IJCI_Base
+from ij_command_conversion import command_dict_to_str, command_str_to_dict
 import time
 
 class IJP_Base:
@@ -71,28 +72,11 @@ class IJP_Text_Based_Direct(IJP_Base):
     # This is intended for use with custom printers / custom integrations into other printers,
     # as it is likely cleaner than trying to emulate an AD5X.
     def translate_command(self, message: bytes) -> dict[str, str] | None:
-        params = str(message, 'utf-8').split()
-        if len(params) == 0:
-            return None
-        else:
-            result = {'command': params[0]}
-            for param in params[1:]:
-                param_split = param.split('=', 1)
-                if len(param_split) == 2:
-                    result[param_split[0]] = param_split[1]
-                else:
-                    result[param_split[0]] = ''
-
-        return result
+        return command_str_to_dict(str(message, 'utf-8'))
     
     def translate_response(self, response: dict[str, str]) -> bytes | None:
-        result = response.get('command', None)
+        result = command_dict_to_str(response)
         if result == None:
             return None
-        
-        for key, value in response.items():
-            if key == 'command':
-                continue
-            result += f' {key}={value}'
-
-        return result.encode('utf-8')
+        else:
+            return result.encode('utf-8')

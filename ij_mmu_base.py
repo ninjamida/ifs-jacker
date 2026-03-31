@@ -5,6 +5,7 @@ class IJM_Base:
     def __init__(self, connection: IJCI_Base):
         self.connection = connection
         self.command_response_wait_timeout = 1
+        self.friendly_name = "Base_Placeholder"
 
     def get_channel_count(self) -> int:
         return 0
@@ -42,6 +43,7 @@ class IJM_Text_Based(IJM_Base):
     def __init__(self, connection: IJCI_Base, seperator: str | None = None):
         super().__init__(connection)
         self.seperator = seperator
+        self.friendly_name = "Base_Placeholder_Text_Based"
     
     def translate_response(self, message: bytes) -> dict[str, str] | None:
         text_response = str(message, 'utf-8')
