@@ -1,28 +1,28 @@
 from ij_comm_interfaces import IJCI_Null
+import time
 
-class IJU_Null:
+class IJP_Null:
     def __init__(self, connection: IJCI_Null):
         self.connection = connection
 
-    def receive_commands(self) -> list:
-        result = []
-        while self.connection.check_receive():
-            new_cmd = self.translate_command(self.connection.receive())
-            if new_cmd:
-                result += [new_cmd]
+    def receive_command(self, wait_timeout: float = 0) -> dict[str, str] | None:
+        result = None
+        deadline = time.ticks_add(time.ticks_ms(), int(wait_timeout * 1000))
+        while time.ticks_diff(deadline, time.ticks_ms()) > 0:
+            if self.connection.check_receive():
+                new_cmd = self.translate_command(self.connection.receive())
+                if new_cmd:
+                    result = new_cmd
+                break
         return result
 
     def check_receive_commands(self) -> bool:
-        if self.connection:
-            return self.connection.check_receive()
-        else:
-            return False
+        return self.connection.check_receive()
         
     def send_response(self, response: dict[str, str]):
-        if self.connection:
-            new_response = self.translate_response(response)
-            if new_response:
-                self.connection.send(new_response)
+        new_response = self.translate_response(response)
+        if new_response:
+            self.connection.send(new_response)
 
     def translate_command(self, message: bytes) -> dict[str, str] | None:
         return None
@@ -30,7 +30,7 @@ class IJU_Null:
     def translate_response(self, response: dict[str, str]) -> bytes | None:
         return None
 
-class IJU_Text_Based(IJU_Null):
+class IJP_Text_Based(IJP_Null):
     def __init__(self, connection: IJCI_Null, seperator: str | None = None):
         super().__init__(connection)
         self.seperator = seperator
@@ -66,7 +66,7 @@ class IJU_Text_Based(IJU_Null):
             else:
                 return None
         
-class IJU_Text_Based_Direct(IJU_Null):
+class IJP_Text_Based_Direct(IJP_Null):
     # Directly takes IFS Jacker internal commands, and relays IFS Jacker internal responses.
     # This is intended for use with custom printers / custom integrations into other printers,
     # as it is likely cleaner than trying to emulate an AD5X.

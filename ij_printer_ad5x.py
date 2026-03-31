@@ -1,7 +1,7 @@
-from ij_printer_null import IJU_Text_Based
+from ij_printer_null import IJP_Text_Based
 from ij_comm_interfaces import IJCI_Null
 
-class IJU_AD5X(IJU_Text_Based):
+class IJP_AD5X(IJP_Text_Based):
     def __init__(self, connection: IJCI_Null):
         super().__init__(connection=connection, seperator=None)
 
