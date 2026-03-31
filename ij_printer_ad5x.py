@@ -54,11 +54,8 @@ class IJP_AD5X(IJP_Text_Based):
     
     def translate_in_F112(self, elements: list[str]) -> dict[str, str]:
         return {'command': 'mmu_halt_movement'}
-
-    def translate_in_Z1(self, elements: list[str]) -> dict[str, str]:
-        return {'command': 'ij_get_status'}
     
-    def translate_in_Z2(self, elements: list[str]) -> dict[str, str] | None:
+    def translate_in_Z0(self, elements: list[str]) -> dict[str, str] | None:
         if len(elements) < 2:
             return None
         result = {'command': elements[1]}
@@ -69,6 +66,9 @@ class IJP_AD5X(IJP_Text_Based):
             else:
                 result[param_elements[0]] = ''
         return result
+
+    def translate_in_Z1(self, elements: list[str]) -> dict[str, str]:
+        return {'command': 'ij_get_status'}
     
     def translate_out_mmu_response_insert_filament(self, elements: dict[str, str]) -> str:
         channel_index = elements.get('channel', None)

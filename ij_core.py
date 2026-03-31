@@ -17,6 +17,7 @@ class IJ_Core:
         self.next_command_origin: str = ''
         
         self.terminate = False
+        self.reboot_flag = True
 
     def write_console(self, text: str | None):
         if self.console and text:
@@ -133,4 +134,12 @@ class IJ_Core:
 
         self.next_command = response
         self.next_command_origin = f'response-{origin}'
+
+    def execute_command_terminate(self, command: dict[str, str], origin: str):
+        self.terminate = True
+        self.reboot_flag = False
+
+    def execute_command_reboot(self, command: dict[str, str], origin: str):
+        self.terminate = True
+        self.reboot_flag = True
             

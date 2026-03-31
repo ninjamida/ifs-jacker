@@ -1,3 +1,4 @@
+import machine
 from ij_core import IJ_Core
 from ij_console import IJ_Console, CONSOLE_THREADED
 
@@ -15,5 +16,10 @@ def main():
     
     if CONSOLE_THREADED:
         console.terminate = True
+        while console.running:
+            pass
+
+    if core.reboot_flag:
+        machine.reset()
 
 main()

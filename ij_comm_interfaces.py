@@ -54,7 +54,7 @@ class IJCI_UART_EN(IJCI_UART):
         super().send(message)
         self.en_pin.value(not self.write_en_state)
 
-class IJCI_UART_EN_Multi(IJCI_UART):
+class IJCI_UART_EN_Multi_Splitter(IJCI_UART):
     def __init__(self, uart_channel: int, tx_pin: int, rx_pin: int, write_en_state:bool=True, baud: int=115200,
                  bits: int=8, parity:int|None=None, stop_bits: int=1):
         super().__init__(uart_channel=uart_channel, tx_pin=tx_pin, rx_pin=rx_pin, baud=baud, bits=bits, parity=parity, stop_bits=stop_bits)
@@ -73,11 +73,11 @@ class IJCI_UART_EN_Multi(IJCI_UART):
             if pin != en_pin:
                 pin.value(self.write_en_state)
 
-    def make_device_interface(self, en_pin: int, auto_set_read_device_after_send: bool = True) -> _IJCI_UART_EN_Multi_Device:
-        return _IJCI_UART_EN_Multi_Device(parent_multi=self, en_pin=en_pin, auto_set_read_device_after_send=auto_set_read_device_after_send)
+    def make_device_interface(self, en_pin: int, auto_set_read_device_after_send: bool = True) -> IJCI_UART_EN_Multi:
+        return IJCI_UART_EN_Multi(parent_multi=self, en_pin=en_pin, auto_set_read_device_after_send=auto_set_read_device_after_send)
 
-class _IJCI_UART_EN_Multi_Device(IJCI_Base):
-    def __init__(self, parent_multi: IJCI_UART_EN_Multi, en_pin: int, auto_set_read_device_after_send: bool = True):
+class IJCI_UART_EN_Multi(IJCI_Base):
+    def __init__(self, parent_multi: IJCI_UART_EN_Multi_Splitter, en_pin: int, auto_set_read_device_after_send: bool = True):
         self.parent = parent_multi
         initial_en_pin_state = parent_multi.write_en_state if (len(parent_multi.en_pins) == 0) else not parent_multi.write_en_state
         self.en_pin = Pin(en_pin, Pin.OUT, value=initial_en_pin_state)
