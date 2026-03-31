@@ -120,7 +120,6 @@ class IJ_Core:
         if 'mmu' in targets and self.mmu:
             self.mmu.send_command(command, False)
 
-
     def execute_command_ij_get_status(self, command: dict[str, str], origin: str):
         response = {'command': 'ij_response_get_status'}
 
@@ -137,6 +136,11 @@ class IJ_Core:
             response['console_threaded'] = 'Enabled' if CONSOLE_THREADED else 'Disabled'
 
         self.next_command = response
+        self.next_command_origin = f'response-{origin}'
+
+    def execute_command_ij_echo(self, command: dict[str, str], origin: str):
+        command['command'] = 'ij_response_echo'
+        self.next_command = command
         self.next_command_origin = f'response-{origin}'
 
     def execute_command_terminate(self, command: dict[str, str], origin: str):
