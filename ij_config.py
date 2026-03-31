@@ -50,8 +50,10 @@ class IJ_Config_Loader:
 
     def load_console_settings(self, core: IJ_Core, file_data: dict[str, dict[str, str]]):
         console_sec = file_data.get('Console', {})
-        if console_sec.get('enabled') == 'True':
+        if console_sec.get('enabled', 'False') == 'True':
             core.console = IJ_Console()
+            if console_sec.get('read_only', 'False') == 'True':
+                core.console.read_only = True
 
     def load_printer(self, printer_data: dict[str, str]):
         pass

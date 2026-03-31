@@ -14,6 +14,9 @@ class IJCI_Base:
     def receive(self) -> bytes:
         return bytes()
     
+    def update(self):
+        pass
+    
     @staticmethod
     def make_from_config(config_data: dict[str, str]) -> IJCI_Base:
         return IJCI_Base()

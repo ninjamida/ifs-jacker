@@ -32,6 +32,9 @@ class IJM_Base:
             return self.receive_data(self.command_response_wait_timeout)
         else:
             return None
+        
+    def update(self):
+        pass
 
     def translate_command(self, command: dict[str, str]) -> bytes | None:
         return None

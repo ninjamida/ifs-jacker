@@ -25,6 +25,9 @@ class IJP_Base:
         if new_response:
             self.connection.send(new_response)
 
+    def update(self):
+        pass
+
     def translate_command(self, message: bytes) -> dict[str, str] | None:
         return None
     

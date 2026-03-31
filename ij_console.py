@@ -18,6 +18,8 @@ class IJ_Console:
         self.input_prefix = "  Command:"
         self.timestamp_digits = len(self.input_prefix)
 
+        self.read_only = False
+
         if CONSOLE_THREADED:
             self.thread_lock = _thread.allocate_lock()
 
@@ -66,6 +68,9 @@ class IJ_Console:
             print(f"\r{time.ticks_ms():0{self.timestamp_digits}d}  Exception occurred in console: {e}")
     
     def check_input(self) -> str | None:
+        if self.read_only:
+            return None
+
         if self.need_refresh_prompt:
             sys.stdout.write('\r' + self.input_prefix + '  ' + self.input_buffer)
             self.need_refresh_prompt = False
