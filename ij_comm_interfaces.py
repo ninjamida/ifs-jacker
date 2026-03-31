@@ -1,7 +1,7 @@
 from machine import UART, Pin
 import time
 
-class IJCI_Null:
+class IJCI_Base:
     def __init__(self):
         pass
 
@@ -14,7 +14,7 @@ class IJCI_Null:
     def receive(self) -> bytes:
         return bytes()
     
-class IJCI_UART(IJCI_Null):
+class IJCI_UART(IJCI_Base):
     def __init__(self, uart_channel: int, tx_pin: int, rx_pin: int, baud:int=115200, bits:int=8, parity:int|None=None, stop_bits:int=1):
         super().__init__()
         self.uart = UART(
@@ -76,7 +76,7 @@ class IJCI_UART_EN_Multi(IJCI_UART):
     def make_device_interface(self, en_pin: int, auto_set_read_device_after_send: bool = True) -> _IJCI_UART_EN_Multi_Device:
         return _IJCI_UART_EN_Multi_Device(parent_multi=self, en_pin=en_pin, auto_set_read_device_after_send=auto_set_read_device_after_send)
 
-class _IJCI_UART_EN_Multi_Device(IJCI_Null):
+class _IJCI_UART_EN_Multi_Device(IJCI_Base):
     def __init__(self, parent_multi: IJCI_UART_EN_Multi, en_pin: int, auto_set_read_device_after_send: bool = True):
         self.parent = parent_multi
         initial_en_pin_state = parent_multi.write_en_state if (len(parent_multi.en_pins) == 0) else not parent_multi.write_en_state

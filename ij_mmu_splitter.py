@@ -1,8 +1,7 @@
-from ij_comm_interfaces import IJCI_Null
-from ij_mmu_null import IJM_Null
+from ij_mmu_base import IJM_Base
 
-class IJM_Splitter(IJM_Null):
-    def __init__(self, mmu_list: list[IJM_Null]):
+class IJM_Splitter(IJM_Base):
+    def __init__(self, mmu_list: list[IJM_Base]):
         super().__init__(None) # type: ignore
         self.mmu_list = mmu_list
         self.build_channel_map()

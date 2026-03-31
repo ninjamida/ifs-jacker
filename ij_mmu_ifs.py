@@ -1,8 +1,8 @@
-from ij_comm_interfaces import IJCI_Null
-from ij_mmu_null import IJM_Text_Based
+from ij_comm_interfaces import IJCI_Base
+from ij_mmu_base import IJM_Text_Based
 
 class IJM_IFS(IJM_Text_Based):
-    def __init__(self, connection: IJCI_Null):
+    def __init__(self, connection: IJCI_Base):
         super().__init__(connection)
 
     def get_channel_count(self) -> int:

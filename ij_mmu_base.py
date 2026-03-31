@@ -1,8 +1,8 @@
-from ij_comm_interfaces import IJCI_Null
+from ij_comm_interfaces import IJCI_Base
 import time
 
-class IJM_Null:
-    def __init__(self, connection: IJCI_Null):
+class IJM_Base:
+    def __init__(self, connection: IJCI_Base):
         self.connection = connection
         self.command_response_wait_timeout = 1
 
@@ -38,8 +38,8 @@ class IJM_Null:
     def translate_response(self, message: bytes) -> dict[str, str] | None:
         return None
     
-class IJM_Text_Based(IJM_Null):
-    def __init__(self, connection: IJCI_Null, seperator: str | None = None):
+class IJM_Text_Based(IJM_Base):
+    def __init__(self, connection: IJCI_Base, seperator: str | None = None):
         super().__init__(connection)
         self.seperator = seperator
     

@@ -1,8 +1,8 @@
-from ij_printer_null import IJP_Text_Based
-from ij_comm_interfaces import IJCI_Null
+from ij_printer_base import IJP_Text_Based
+from ij_comm_interfaces import IJCI_Base
 
 class IJP_AD5X(IJP_Text_Based):
-    def __init__(self, connection: IJCI_Null):
+    def __init__(self, connection: IJCI_Base):
         super().__init__(connection=connection, seperator=None)
 
     def _translate_in_channel(self, elements: list[str], command: str) -> dict[str, str]:
