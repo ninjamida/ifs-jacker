@@ -1,4 +1,4 @@
-from ij_comm_interfaces import IJCI_Base
+from ij_comm_base import IJCI_Base
 from ij_command_conversion import command_dict_to_str, command_str_to_dict
 import time
 

@@ -132,6 +132,10 @@ class IJ_Core:
         response['mmu_type'] = type(self.mmu).__name__ if self.mmu is not None else 'None'
         response['channels'] = str(self.mmu.get_channel_count() if self.mmu else 0)
 
+        response['console'] = 'Enabled' if self.console else 'Disabled'
+        if self.console:
+            response['console_threaded'] = 'Enabled' if CONSOLE_THREADED else 'Disabled'
+
         self.next_command = response
         self.next_command_origin = f'response-{origin}'
 

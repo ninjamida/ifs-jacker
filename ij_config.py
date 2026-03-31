@@ -1,0 +1,90 @@
+from ij_core import IJ_Core
+from ij_console import IJ_Console
+from ij_comm_base import IJCI_Base
+import importlib, os, inspect
+
+class IJ_Config_Loader:
+    def load_modules(self):
+        self.module_classes = {}
+
+        for file in os.listdir('.'):
+            if (file.startswith('ij_printer_') or file.startswith('ij_mmu_') or file.startswith('ij_comm_')) and file.endswith('.py'):
+                module_name = file[:-3]
+                module = importlib.import_module(module_name)
+                for name, attr in module.__dict__.items():
+                    if name.startswith('IJP_') or name.startswith('IJM_') or name.startswith('IJCI_'):
+                        if inspect.isclass(attr):
+                            self.module_classes[name] = attr
+
+    def parse_config_file(self) -> dict[str, dict[str, str]]:
+        try:
+            result = {'': {}}
+            active_sec = result['']
+            with open('ij_config.ini', 'rt') as f:
+                for line in f:
+                    if line.startswith('[') and line.endswidth(']'):
+                        sec_key = line[1:-1]
+                        if not sec_key in result:
+                            result[sec_key] = {}
+                        active_sec = result[sec_key]
+                    elif line.strip() != '':
+                        line_split = line.split('=', 1)
+                        if len(line_split) == 2:
+                            active_sec[line_split[0].strip()] = line_split[1].strip()
+                        else:
+                            active_sec[line_split[0].strip()] = ''
+            return result
+        except:
+            return {}
+
+    def load_config(self, core: IJ_Core):
+        self.load_modules()
+
+        file_data = self.parse_config_file()
+
+        self.load_comm_interfaces(file_data)
+
+        self.load_console_settings(core, file_data)
+        core.printer = self.load_printer(file_data.get('Printer', {}))
+        core.mmu = self.load_mmu(file_data.get('MMU', {}))
+
+    def load_console_settings(self, core: IJ_Core, file_data: dict[str, dict[str, str]]):
+        console_sec = file_data.get('Console', {})
+        if console_sec.get('enabled') == 'True':
+            core.console = IJ_Console()
+
+    def load_printer(self, printer_data: dict[str, str]):
+        pass
+
+    def load_mmu(self, mmu_data: dict[str, str]):
+        pass
+
+    def load_comm_interfaces(self, file_data: dict[str, dict[str, str]]):
+        self.comm_interfaces = {}
+
+        for sec_key, sec_value in file_data.items():
+            if sec_key.startswith('Comm_'):
+                interface_name = sec_key[5:]
+                interface_type = sec_value.get('type', None)
+                if interface_type:
+                    interface_class = self.module_classes.get(f'IJCI_{interface_type}', None)
+                    if interface_class:
+                        self.comm_interfaces[interface_name] = interface_class.make_from_config(sec_value)
+    
+    def get_comm_interface(self, interface_name: str) -> IJCI_Base:
+        if interface_name in self.comm_interfaces:
+            return self.comm_interfaces[interface_name]
+        
+        for name in self.comm_interfaces.keys():
+            if interface_name.split(':', 1)[0] == name:
+                parent_interface = self.comm_interfaces[name]
+                if getattr(parent_interface, 'make_child', None):
+                    name_params = interface_name.split(':')[1:]
+                    result = parent_interface.make_child(*name_params)
+                    self.comm_interfaces[interface_name] = result
+                    return result
+                else:
+                    return parent_interface
+                
+        return IJCI_Base() # Null
+                

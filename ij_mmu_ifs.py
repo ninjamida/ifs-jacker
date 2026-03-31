@@ -1,4 +1,4 @@
-from ij_comm_interfaces import IJCI_Base
+from ij_comm_base import IJCI_Base
 from ij_mmu_base import IJM_Text_Based
 
 class IJM_IFS(IJM_Text_Based):

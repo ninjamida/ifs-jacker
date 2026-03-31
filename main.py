@@ -1,22 +1,22 @@
-import machine
+import machine, gc
 from ij_core import IJ_Core
-from ij_console import IJ_Console, CONSOLE_THREADED
+from ij_console import CONSOLE_THREADED
+from ij_config import IJ_Config_Loader
 
 def main():
     core = IJ_Core()
-    
-    console = IJ_Console()
-    core.console = console
+    IJ_Config_Loader().load_config(core)
+    gc.collect()
 
-    if CONSOLE_THREADED:
-        console.start_thread()
+    if CONSOLE_THREADED and core.console:
+        core.console.start_thread()
 
     while not core.terminate:
         core.update()
     
-    if CONSOLE_THREADED:
-        console.terminate = True
-        while console.running:
+    if CONSOLE_THREADED and core.console:
+        core.console.terminate = True
+        while core.console.running:
             pass
 
     if core.reboot_flag:

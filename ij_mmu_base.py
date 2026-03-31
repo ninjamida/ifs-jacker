@@ -1,4 +1,4 @@
-from ij_comm_interfaces import IJCI_Base
+from ij_comm_base import IJCI_Base
 import time
 
 class IJM_Base:

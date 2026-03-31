@@ -14,6 +14,15 @@ class IJCI_Base:
     def receive(self) -> bytes:
         return bytes()
     
+    @staticmethod
+    def make_from_config(config_data: dict[str, str]) -> IJCI_Base:
+        return IJCI_Base()
+    
+class IJCI_Null: # Alias
+    @staticmethod
+    def make_from_config(config_data: dict[str, str]) -> IJCI_Base:
+        return IJCI_Base()
+    
 class IJCI_UART(IJCI_Base):
     def __init__(self, uart_channel: int, tx_pin: int, rx_pin: int, baud:int=115200, bits:int=8, parity:int|None=None, stop_bits:int=1):
         super().__init__()
@@ -41,6 +50,27 @@ class IJCI_UART(IJCI_Base):
                     result += get_data
                     deadline = time.ticks_add(time.ticks_ms(), self.receive_continue_timeout)
         return result
+    
+    @staticmethod
+    def make_from_config(comm_data: dict[str, str]) -> IJCI_UART:
+        instance = int(comm_data.get('instance', 0))
+        parity_raw = comm_data.get('parity', None)
+        if parity_raw == 'None':
+            parity = None
+        elif parity_raw:
+            parity = int(parity_raw)
+        else:
+            parity = None
+
+        return IJCI_UART(
+            uart_channel = instance,
+            tx_pin = int(comm_data.get('tx_pin', instance * 4)),
+            rx_pin = int(comm_data.get('rx_pin', instance * 4 + 1)),
+            baud = int(comm_data.get('baud', 115200)),
+            bits = int(comm_data.get('bits', 8)),
+            parity = parity,
+            stop_bits = int(comm_data.get('stop_bits', 1))
+            )
 
 class IJCI_UART_EN(IJCI_UART):
     def __init__(self, uart_channel: int, tx_pin: int, rx_pin: int, en_pin: int, write_en_state:bool=True, baud: int=115200,
@@ -53,6 +83,28 @@ class IJCI_UART_EN(IJCI_UART):
         self.en_pin.value(self.write_en_state)
         super().send(message)
         self.en_pin.value(not self.write_en_state)
+
+    @staticmethod
+    def make_from_config(comm_data: dict[str, str]) -> IJCI_UART_EN:
+        instance = int(comm_data.get('instance', 0))
+        parity_raw = comm_data.get('parity', None)
+        if parity_raw == 'None':
+            parity = None
+        elif parity_raw:
+            parity = int(parity_raw)
+        else:
+            parity = None
+
+        return IJCI_UART_EN(
+            uart_channel = instance,
+            tx_pin = int(comm_data.get('tx_pin', instance * 4)),
+            rx_pin = int(comm_data.get('rx_pin', instance * 4 + 1)),
+            en_pin = int(comm_data.get('en_pin', instance * 4 + 2)),
+            baud = int(comm_data.get('baud', 115200)),
+            bits = int(comm_data.get('bits', 8)),
+            parity = parity,
+            stop_bits = int(comm_data.get('stop_bits', 1))
+            )
 
 class IJCI_UART_EN_Multi_Splitter(IJCI_UART):
     def __init__(self, uart_channel: int, tx_pin: int, rx_pin: int, write_en_state:bool=True, baud: int=115200,
@@ -73,16 +125,39 @@ class IJCI_UART_EN_Multi_Splitter(IJCI_UART):
             if pin != en_pin:
                 pin.value(self.write_en_state)
 
-    def make_device_interface(self, en_pin: int, auto_set_read_device_after_send: bool = True) -> IJCI_UART_EN_Multi:
-        return IJCI_UART_EN_Multi(parent_multi=self, en_pin=en_pin, auto_set_read_device_after_send=auto_set_read_device_after_send)
+    def make_child(self, en_pin_raw: str, auto_set_read_device_after_send_raw: str) -> IJCI_UART_EN_Multi:
+        en_pin = int(en_pin_raw)
+        auto_set_read_device_after_send = (auto_set_read_device_after_send_raw == 'True')
+        return IJCI_UART_EN_Multi(parent=self, en_pin=en_pin, auto_set_read_device_after_send=auto_set_read_device_after_send)
+    
+    @staticmethod
+    def make_from_config(comm_data: dict[str, str]) -> IJCI_UART_EN_Multi_Splitter:
+        instance = int(comm_data.get('instance', 0))
+        parity_raw = comm_data.get('parity', None)
+        if parity_raw == 'None':
+            parity = None
+        elif parity_raw:
+            parity = int(parity_raw)
+        else:
+            parity = None
+
+        return IJCI_UART_EN_Multi_Splitter(
+            uart_channel = instance,
+            tx_pin = int(comm_data.get('tx_pin', instance * 4)),
+            rx_pin = int(comm_data.get('rx_pin', instance * 4 + 1)),
+            baud = int(comm_data.get('baud', 115200)),
+            bits = int(comm_data.get('bits', 8)),
+            parity = parity,
+            stop_bits = int(comm_data.get('stop_bits', 1))
+            )
 
 class IJCI_UART_EN_Multi(IJCI_Base):
-    def __init__(self, parent_multi: IJCI_UART_EN_Multi_Splitter, en_pin: int, auto_set_read_device_after_send: bool = True):
-        self.parent = parent_multi
-        initial_en_pin_state = parent_multi.write_en_state if (len(parent_multi.en_pins) == 0) else not parent_multi.write_en_state
+    def __init__(self, parent: IJCI_UART_EN_Multi_Splitter, en_pin: int, auto_set_read_device_after_send: bool = True):
+        self.parent = parent
+        initial_en_pin_state = parent.write_en_state if (len(parent.en_pins) == 0) else not parent.write_en_state
         self.en_pin = Pin(en_pin, Pin.OUT, value=initial_en_pin_state)
         self.auto_set_read_device_after_send = auto_set_read_device_after_send
-        parent_multi.en_pins += [self.en_pin]
+        parent.en_pins += [self.en_pin]
 
     def send(self, message: bytes):
         self.parent.set_write_device(self.en_pin)
@@ -101,3 +176,7 @@ class IJCI_UART_EN_Multi(IJCI_Base):
 
     def set_as_read_device(self):
         self.parent.set_read_device(self.en_pin)
+
+    @staticmethod
+    def make_from_config(comm_data: dict[str, str]) -> IJCI_UART_EN_Multi_Splitter:
+        return IJCI_UART_EN_Multi_Splitter.make_from_config(comm_data)

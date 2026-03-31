@@ -1,5 +1,5 @@
 from ij_printer_base import IJP_Text_Based
-from ij_comm_interfaces import IJCI_Base
+from ij_comm_base import IJCI_Base
 
 class IJP_AD5X(IJP_Text_Based):
     def __init__(self, connection: IJCI_Base):
