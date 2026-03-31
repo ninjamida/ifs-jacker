@@ -8,9 +8,6 @@ class IJM_Null:
 
     def get_channel_count(self) -> int:
         return 0
-
-    def get_status(self) -> dict[str, str]:
-        return {'global_state': 'ok', 'active_channel': '-1'}
     
     def receive_data(self, wait_timeout: float = 0) -> dict[str, str] | None:
         result = None
@@ -40,3 +37,39 @@ class IJM_Null:
     
     def translate_response(self, message: bytes) -> dict[str, str] | None:
         return None
+    
+class IJM_Text_Based(IJM_Null):
+    def __init__(self, connection: IJCI_Null, seperator: str | None = None):
+        super().__init__(connection)
+        self.seperator = seperator
+    
+    def translate_response(self, message: bytes) -> dict[str, str] | None:
+        text_response = str(message, 'utf-8')
+
+        if self.seperator == None:
+            elements = text_response.split()
+        else:
+            elements = text_response.split(self.seperator)
+        
+        if len(elements) == 0:
+            return None
+
+        translate_function = getattr(self, f'translate_in_{elements[0]}', None)
+        if translate_function == None:
+            return None
+        else:
+            return translate_function(elements)
+    
+    def translate_command(self, command: dict[str, str]) -> bytes | None:
+        command_action = command.get('command', None)
+        if command_action == None:
+            return None
+        translate_function = getattr(self, f'translate_out_{command_action}', None)
+        if translate_function == None:
+            return None
+        else:
+            result = translate_function(command)
+            if result:
+                return result.encode('utf-8')
+            else:
+                return None

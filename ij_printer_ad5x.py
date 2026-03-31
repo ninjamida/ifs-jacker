@@ -20,7 +20,7 @@ class IJP_AD5X(IJP_Text_Based):
         speed = None
         for param in elements[1:]:
             if param.startswith('C'):
-                result['channel'] = param[1:]
+                result['channel'] = str(int(param[1:]) - 1)
             if param.startswith('L'):
                 result['channel'] = param[1:]
             if param.startswith('S'):
@@ -70,21 +70,21 @@ class IJP_AD5X(IJP_Text_Based):
                 result[param_elements[0]] = ''
         return result
     
-    def translate_out_mmu_insert_filament(self, elements: dict[str, str]) -> str:
+    def translate_out_mmu_response_insert_filament(self, elements: dict[str, str]) -> str:
         channel_index = elements.get('channel', None)
         if channel_index == None:
             return 'F10 ok.'
         else:
-            return f'F10 ok. FFS channel {channel_index} feeding.'
+            return f'F10 ok. FFS channel {int(channel_index) + 1} feeding.'
         
-    def translate_out_mmu_withdraw_filament(self, elements: dict[str, str]) -> str:
+    def translate_out_mmu_response_withdraw_filament(self, elements: dict[str, str]) -> str:
         channel_index = elements.get('channel', None)
         if channel_index == None:
             return 'F11 ok.'
         else:
-            return f'F11 ok. FFS channel {channel_index} exiting.'
+            return f'F11 ok. FFS channel {int(channel_index) + 1} exiting.'
         
-    def translate_out_mmu_get_status(self, elements: dict[str, str]) -> str:
+    def translate_out_mmu_response_get_status(self, elements: dict[str, str]) -> str:
         # States: (some can be +11*channel to indicate a specific channel)
         # 3 - Querying
         # 5 - Everything OK
@@ -108,10 +108,10 @@ class IJP_AD5X(IJP_Text_Based):
         result_stall_state = 0
 
         i = 0
-        while f'channel{i}_present' in elements:
+        while f'channel_{i}_present' in elements:
             try:
                 bitmask = 1 << i
-                prefix = f'channel{i}_'
+                prefix = f'channel_{i}_'
                 if elements.get(prefix + 'present', 'False') == 'True':
                     result_silk |= bitmask
                 if elements.get(prefix + 'need_insert', 'False') == 'True':
@@ -135,32 +135,32 @@ class IJP_AD5X(IJP_Text_Based):
             f'ffs_channels_insert: {result_channels_insert} stall_state: {result_stall_state} ' + \
             'jinsi_GCONF: 000001dc qiehuan_GCONF: 000001dc'
 
-    def translate_out_mmu_reset_drivers(self, elements: dict[str, str]) -> str:
+    def translate_out_mmu_response_reset_drivers(self, elements: dict[str, str]) -> str:
         return 'F15 ok.'
 
-    def translate_out_mmu_release_all_channels(self, elements: dict[str, str]) -> str:
+    def translate_out_mmu_response_release_all_channels(self, elements: dict[str, str]) -> str:
         return 'F18 ok'
     
-    def translate_out_mmu_mark_active_channel(self, elements: dict[str, str]) -> str:
+    def translate_out_mmu_response_mark_active_channel(self, elements: dict[str, str]) -> str:
         channel_index = elements.get('channel', None)
         if channel_index == None:
             return 'F23 ok.'
         else:
-            return f'F23 ok. chan {channel_index}.'
+            return f'F23 ok. chan {int(channel_index) + 1}.'
         
-    def translate_out_mmu_clamp_channel(self, elements: dict[str, str]) -> str:
+    def translate_out_mmu_response_clamp_channel(self, elements: dict[str, str]) -> str:
         channel_index = elements.get('channel', None)
         if channel_index == None:
             return 'F24 ok.'
         else:
-            return f'F24 ok. chan {channel_index}.'
+            return f'F24 ok. chan {int(channel_index) + 1}.'
         
-    def translate_out_mmu_release_channel(self, elements: dict[str, str]) -> str:
+    def translate_out_mmu_response_release_channel(self, elements: dict[str, str]) -> str:
         channel_index = elements.get('channel', None)
         if channel_index == None:
             return 'F39 ok.'
         else:
-            return f'F39 ok. FFS channel {channel_index} release.'
+            return f'F39 ok. FFS channel {int(channel_index) + 1} release.'
         
-    def translate_out_mmu_halt_movement(self, elements: dict[str, str]) -> str:
+    def translate_out_mmu_response_halt_movement(self, elements: dict[str, str]) -> str:
         return 'F112 ok.'
