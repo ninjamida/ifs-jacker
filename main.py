@@ -11,19 +11,21 @@ def main():
     gc.collect()
 
     if core.console:
+        core.console.incoming += ['IFS Jacker loaded']
         core.console.outgoing += ['ij_get_status']
         core.console.outgoing += [f'ij_echo load_time={time.ticks_diff(time.ticks_ms(), start_time)}ms']
 
     if CONSOLE_THREADED and core.console:
         core.console.start_thread()
 
-    while not core.terminate:
-        core.update()
-    
-    if CONSOLE_THREADED and core.console:
-        core.console.terminate = True
-        while core.console.running:
-            pass
+    try:
+        while not core.terminate:
+            core.update()
+    finally:
+        if CONSOLE_THREADED and core.console:
+            core.console.terminate = True
+            while core.console.running:
+                pass
 
     if core.reboot_flag:
         machine.reset()

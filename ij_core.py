@@ -5,7 +5,7 @@ from ij_command_conversion import command_dict_to_str, command_str_to_dict
 
 SCRIPT_IDENTIFIER = 'IFS Jacker'
 SCRIPT_AUTHOR = 'Namida Verasche (Trumble)'
-SCRIPT_VERSION = '0.2.0'
+SCRIPT_VERSION = '1.0.0'
 
 class IJ_Core:   
     def __init__(self):

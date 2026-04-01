@@ -51,7 +51,7 @@ class IJ_Config_Loader:
         core.mmu = self.load_mmu(file_data.get('MMU', {}))
 
     def load_console_settings(self, core: IJ_Core, console_sec: dict[str, str]):
-        if console_sec.get('enabled', 'False') == 'True':
+        if console_sec.get('enabled', 'True') == 'True':
             core.console = IJ_Console()
             if console_sec.get('read_only', 'False') == 'True':
                 core.console.read_only = True
