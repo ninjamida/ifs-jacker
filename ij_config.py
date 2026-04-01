@@ -63,6 +63,7 @@ class IJ_Config_Loader:
             result = IJ_Console()
             if console_sec.get('read_only', 'False') == 'True':
                 result.read_only = True
+            result.hide_flags = console_sec.get('hide_flags', '').split(',')
         else:
             result = IJ_Dummy_Console()
         return result

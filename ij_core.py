@@ -29,14 +29,6 @@ class IJ_Core:
         if RUN_CORE_ON_SECOND_THREAD:
             self.finished = False
 
-    def write_console(self, text: str | None):
-        if text:
-            console().lock()
-            try:
-                console().incoming += [text]
-            finally:
-                console().release()
-
     if RUN_CORE_ON_SECOND_THREAD:
         def run_threaded(self):
             _thread.start_new_thread(self.run_threaded_main, ())
@@ -66,10 +58,10 @@ class IJ_Core:
         except KeyboardInterrupt:
             raise
         except Exception as e:
-            self.write_console(f"Exception occurred in core: {e}")
+            console().write(f"Exception occurred in core: {e}", 'error')
             if self.full_error_details:
                 for line in get_traceback_string(e):
-                    self.write_console(line)
+                    console().write(line, 'error')
 
     def get_next_command(self):
         if len(console().outgoing) > 0:
@@ -133,7 +125,7 @@ class IJ_Core:
 
     def send_command_to_targets(self, command: dict[str, str], targets: list[str], origin: str):
         if 'console' in targets:
-            self.write_console(f'{origin} >> {command_dict_to_str(command)}')
+            console().write(f'{origin} >> {command_dict_to_str(command)}', 'command')
         
         if 'printer' in targets and self.printer:
             self.printer.send_response(command)

@@ -1,5 +1,6 @@
 from ij_comm_base import IJCI_Base, IJCI_Null
 from ij_command_conversion import command_dict_to_str, command_str_to_dict
+from ij_console import console
 import time
 
 class IJM_Base:
@@ -19,6 +20,8 @@ class IJM_Base:
                 new_response = self.translate_response(self.connection.receive())
                 if new_response:
                     result = new_response
+                else:
+                    console().write(f"ERROR on MMU {self.friendly_name}: could not translate input", 'error')
                 break
             if time.ticks_diff(deadline, time.ticks_ms()) <= 0:
                 break
@@ -31,10 +34,12 @@ class IJM_Base:
         new_cmd = self.translate_command(command)
         if new_cmd:
             self.connection.send(new_cmd)
-        if wait_for_response:
-            return self.receive_data(self.command_response_wait_timeout)
+            if wait_for_response:
+                return self.receive_data(self.command_response_wait_timeout)
         else:
-            return None
+            console().write(f"ERROR on MMU {self.friendly_name}: could not translate command {command.get('command', '<Undefined>')}", 'error')
+        
+        return None
         
     def update(self):
         pass

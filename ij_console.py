@@ -17,6 +17,7 @@ class IJ_Dummy_Console:
     def __init__(self):
         self.incoming = []
         self.outgoing = []
+        self.hide_flags = []
         self.read_only = True
 
         if RUN_CORE_ON_SECOND_THREAD:
@@ -29,6 +30,9 @@ class IJ_Dummy_Console:
     def release(self):
         if RUN_CORE_ON_SECOND_THREAD:
             self.thread_lock.release()
+
+    def write(self, message: str | None, category: str):
+        pass
 
     def execute(self):
         if len(self.incoming) > 0:
@@ -55,6 +59,8 @@ class IJ_Console:
 
         self.read_only = False
 
+        self.hide_flags = []
+
         if RUN_CORE_ON_SECOND_THREAD:
             self.thread_lock = _thread.allocate_lock()
 
@@ -65,6 +71,14 @@ class IJ_Console:
     def release(self):
         if RUN_CORE_ON_SECOND_THREAD:
             self.thread_lock.release()
+        
+    def write(self, message: str | None, category: str):
+        if message is not None and category not in self.hide_flags:
+            self.lock()
+            try:
+                self.incoming.append(message)
+            finally:
+                self.release()
     
     def execute(self):
         try:

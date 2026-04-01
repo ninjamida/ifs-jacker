@@ -1,5 +1,6 @@
 from ij_comm_base import IJCI_Base, IJCI_Null
 from ij_command_conversion import command_dict_to_str, command_str_to_dict
+from ij_console import console
 import time
 
 class IJP_Base:
@@ -15,6 +16,8 @@ class IJP_Base:
                 new_cmd = self.translate_command(self.connection.receive())
                 if new_cmd:
                     result = new_cmd
+                else:
+                    console().write(f"ERROR on printer {self.friendly_name}: could not translate input", 'error')
                 break
             if time.ticks_diff(deadline, time.ticks_ms()) <= 0:
                 break
@@ -27,6 +30,8 @@ class IJP_Base:
         new_response = self.translate_response(response)
         if new_response:
             self.connection.send(new_response)
+        else:
+            console().write(f"ERROR on printer {self.friendly_name}: could not translate command {response.get('command', '<Undefined>')}", 'error')
 
     def update(self):
         pass
