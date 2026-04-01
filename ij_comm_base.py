@@ -4,6 +4,7 @@ import time
 class IJCI_Base:
     def __init__(self):
         self.friendly_name = 'Base_Placeholder'
+        self.internal_name = ''
 
     def send(self, message: bytes):
         pass
@@ -16,6 +17,9 @@ class IJCI_Base:
     
     def update(self):
         pass
+
+    def get_plugin_status(self, response: dict[str, str]):
+        response['friendly_name'] = self.friendly_name
     
     @staticmethod
     def make_from_config(config_data: dict[str, str]) -> IJCI_Base:
@@ -26,6 +30,7 @@ class IJCI_Null: # Alias
     def make_from_config(config_data: dict[str, str]) -> IJCI_Base:
         result = IJCI_Base()
         result.friendly_name = 'Null'
+        result.internal_name = 'Null'
         return result
     
 class IJCI_UART(IJCI_Base):
@@ -161,12 +166,14 @@ class IJCI_UART_EN_Multi_Splitter(IJCI_UART):
 
 class IJCI_UART_EN_Multi(IJCI_Base):
     def __init__(self, parent: IJCI_UART_EN_Multi_Splitter, en_pin: int, auto_set_read_device_after_send: bool = True):
+        super().__init__()
         self.parent = parent
         initial_en_pin_state = parent.write_en_state if (len(parent.en_pins) == 0) else not parent.write_en_state
         self.en_pin = Pin(en_pin, Pin.OUT, value=initial_en_pin_state)
         self.auto_set_read_device_after_send = auto_set_read_device_after_send
         parent.en_pins += [self.en_pin]
         self.friendly_name = 'UART_With_EN_Pin_Split_Client'
+        self.internal_name = parent.internal_name + f'_en{en_pin}'
 
     def send(self, message: bytes):
         self.parent.set_write_device(self.en_pin)

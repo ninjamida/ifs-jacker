@@ -9,7 +9,6 @@ def get_debug_comm_interfaces() -> dict[str, IJCI_Debug]:
 class IJCI_Debug(IJCI_Base):
     def __init__(self, id: str | None):
         global debug_comm_interfaces
-        self.friendly_name = 'Debug_Comm'
         self.receive_queue: list[str] = []
         if id in debug_comm_interfaces or id is None:
             i = 0
@@ -18,6 +17,7 @@ class IJCI_Debug(IJCI_Base):
             id = f'debug{i}'
         self.identifier = id
         debug_comm_interfaces[id] = self
+        self.friendly_name = f'Debug_Comm_{id}'
 
     def send(self, message: bytes):
         try:

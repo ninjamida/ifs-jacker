@@ -51,6 +51,7 @@ class IJ_Config_Loader:
         set_console(self.load_console_settings(file_data.get('Console', {})))
         core.printer = self.load_printer(file_data.get('Printer', {}))
         core.mmu = self.load_mmu(file_data.get('MMU', {}))
+        core.comm_interfaces = self.comm_interfaces
 
     def load_console_settings(self, console_sec: dict[str, str]) -> IJ_Console | IJ_Dummy_Console:
         if console_sec.get('enabled', 'True') == 'True':
@@ -68,7 +69,7 @@ class IJ_Config_Loader:
         if len(label_split) > 1 and label_split[0] in self.comm_interfaces:
             parent_comm = self.comm_interfaces[label_split[0]]
             if getattr(parent_comm, 'make_child', None):
-                result = parent_comm.make_child(*label_split[1:])                
+                result = parent_comm.make_child(*label_split[1:]) # type: ignore          
                 self.comm_interfaces[label] = result
                 return result
         
@@ -93,7 +94,7 @@ class IJ_Config_Loader:
             return IJM_Null.make_from_config({})
 
     def load_comm_interfaces(self, file_data: dict[str, dict[str, str]]):
-        self.comm_interfaces = {}
+        self.comm_interfaces: dict[str, IJCI_Base] = {}
 
         for sec_key, sec_value in file_data.items():
             if sec_key.startswith('Comm_'):
@@ -104,21 +105,7 @@ class IJ_Config_Loader:
                     self.comm_interfaces[interface_name] = interface_class.make_from_config(sec_value)
                 else:
                     self.comm_interfaces[interface_name] = IJCI_Null.make_from_config({})
-    
-    def get_comm_interface(self, interface_name: str) -> IJCI_Base:
-        if interface_name in self.comm_interfaces:
-            return self.comm_interfaces[interface_name]
-        
-        for name in self.comm_interfaces.keys():
-            if interface_name.split(':', 1)[0] == name:
-                parent_interface = self.comm_interfaces[name]
-                if getattr(parent_interface, 'make_child', None):
-                    name_params = interface_name.split(':')[1:]
-                    result = parent_interface.make_child(*name_params)
-                    self.comm_interfaces[interface_name] = result
-                    return result
-                else:
-                    return parent_interface
-                
-        return IJCI_Base() # Null
+
+        for key, value in self.comm_interfaces.items():
+            value.internal_name = key
                 

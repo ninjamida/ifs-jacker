@@ -101,6 +101,17 @@ class IJM_Splitter(IJM_Base):
                 self.build_channel_map()
 
             self.mmu_recheck_deadline = time.ticks_add(time.ticks_ms(), self.mmu_recheck_frequency)
+
+    def get_plugin_status(self, response: dict[str, str]):
+        super().get_plugin_status(response)
+        response['mmu_count'] = str(len(self.mmu_list))
+        response['last_used_mmu'] = str(self.last_used_mmu)
+
+        for i, mmu in enumerate(self.mmu_list):
+            this_response = {}
+            mmu.get_plugin_status(this_response)
+            for key, value in this_response.items():
+                response[f'mmu{i}_{key}'] = value
     
     @staticmethod
     def make_from_config(config_data: dict[str, str], connection = None, key_prefix: str = '', load_mmu_func = None) -> IJM_Splitter:

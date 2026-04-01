@@ -3,6 +3,7 @@ RUN_CORE_ON_SECOND_THREAD = True
 from ij_printer_base import IJP_Base
 from ij_mmu_base import IJM_Base
 from ij_console import IJ_Console, console
+from ij_comm_base import IJCI_Base
 from ij_comm_debug import get_debug_comm_interfaces
 from ij_command_conversion import command_dict_to_str, command_str_to_dict
 from ij_info import SCRIPT_AUTHOR, SCRIPT_IDENTIFIER, SCRIPT_VERSION
@@ -13,6 +14,7 @@ if RUN_CORE_ON_SECOND_THREAD:
 
 class IJ_Core:   
     def __init__(self):
+        self.comm_interfaces: dict[str, IJCI_Base] = {}
         self.printer: IJP_Base | None = None
         self.mmu: IJM_Base | None = None
 
@@ -186,6 +188,46 @@ class IJ_Core:
         
         self.next_command = response
         self.next_command_origin = f'response-{origin}'
+
+    def execute_command_ij_get_printer_status(self, command: dict[str, str], origin: str):
+        response = {'command': 'ij_response_get_printer_status'}
+        if self.printer:
+            self.printer.get_plugin_status(response)
+        else:
+            response['type'] = 'None'
+        
+        self.next_command = response
+        self.next_command_origin = f'response-{origin}'
+
+    def execute_command_ij_get_mmu_status(self, command: dict[str, str], origin: str):
+        response = {'command': 'ij_response_get_mmu_status'}
+        if self.mmu:
+            self.mmu.get_plugin_status(response)
+        else:
+            response['type'] = 'None'
+        
+        self.next_command = response
+        self.next_command_origin = f'response-{origin}'
+
+    def execute_command_ij_get_comm_status(self, command: dict[str, str], origin: str):
+        response = {'command': 'ij_response_get_comm_status', 'interface': command.get('interface', '')}
+        comm = self.comm_interfaces.get(command.get('interface', ''), None)
+        if comm:
+            comm.get_plugin_status(response)
+        else:
+            response['type'] = 'None'
+        
+        self.next_command = response
+        self.next_command_origin = f'response-{origin}'
+
+    def execute_command_ij_get_comm_interfaces(self, command: dict[str, str], origin: str):
+        response = {'command': 'ij_response_get_comm_interfaces'}
+        for key, value in self.comm_interfaces.items():
+            response[key] = value.friendly_name
+
+        self.next_command = response
+        self.next_command_origin = f'response-{origin}'
+
 
     def execute_command_terminate(self, command: dict[str, str], origin: str):
         self.terminate = True

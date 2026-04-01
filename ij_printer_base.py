@@ -29,6 +29,10 @@ class IJP_Base:
     def update(self):
         pass
 
+    def get_plugin_status(self, response: dict[str, str]):
+        response['friendly_name'] = self.friendly_name
+        response['comm'] = self.connection.internal_name if self.connection else 'None'
+
     def translate_command(self, message: bytes) -> dict[str, str] | None:
         return None
     
@@ -52,6 +56,10 @@ class IJP_Text_Based(IJP_Base):
         super().__init__(connection)
         self.seperator = seperator
         self.friendly_name = "Base_Placeholder_Text_Based"
+
+    def get_plugin_status(self, response: dict[str, str]):
+        super().get_plugin_status(response)
+        response['seperator'] = self.seperator if self.seperator else 'None'
 
     def translate_command(self, message: bytes) -> dict[str, str] | None:
         text_cmd = str(message, 'utf-8')

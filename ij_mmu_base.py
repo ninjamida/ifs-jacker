@@ -37,6 +37,11 @@ class IJM_Base:
     def update(self):
         pass
 
+    def get_plugin_status(self, response: dict[str, str]):
+        response['friendly_name'] = self.friendly_name
+        response['comm'] = self.connection.internal_name if self.connection else 'None'
+        response['channel_count'] = str(self.get_channel_count())
+
     def translate_command(self, command: dict[str, str]) -> bytes | None:
         return None
     
@@ -60,6 +65,10 @@ class IJM_Text_Based(IJM_Base):
         super().__init__(connection)
         self.seperator = seperator
         self.friendly_name = "Base_Placeholder_Text_Based"
+
+    def get_plugin_status(self, response: dict[str, str]):
+        super().get_plugin_status(response)
+        response['seperator'] = self.seperator if self.seperator else 'None'
     
     def translate_response(self, message: bytes) -> dict[str, str] | None:
         text_response = str(message, 'utf-8')
