@@ -10,12 +10,11 @@ def main():
     IJ_Config_Loader().load_config(core)
     gc.collect()
 
-    if console:
-        console.incoming += ['IFS Jacker loaded']
-        console.outgoing += ['ij_get_status']
-        console.outgoing += [f'ij_echo load_time={time.ticks_diff(time.ticks_ms(), start_time)}ms']
+    console.incoming += ['IFS Jacker loaded']
+    console.outgoing += ['ij_get_status']
+    console.outgoing += [f'ij_echo load_time={time.ticks_diff(time.ticks_ms(), start_time)}ms']
 
-    if RUN_CORE_ON_SECOND_THREAD and console:
+    if RUN_CORE_ON_SECOND_THREAD:
         core.run_threaded()
         while not core.finished:
             console.execute()

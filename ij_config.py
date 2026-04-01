@@ -1,5 +1,5 @@
 from ij_core import IJ_Core
-from ij_console import IJ_Console, console
+from ij_console import IJ_Console, IJ_Dummy_Console, console
 from ij_comm_base import IJCI_Base, IJCI_Null
 from ij_printer_base import IJP_Base, IJP_Null
 from ij_mmu_base import IJM_Base, IJM_Null
@@ -53,13 +53,13 @@ class IJ_Config_Loader:
         core.printer = self.load_printer(file_data.get('Printer', {}))
         core.mmu = self.load_mmu(file_data.get('MMU', {}))
 
-    def load_console_settings(self, console_sec: dict[str, str]) -> IJ_Console | None:
+    def load_console_settings(self, console_sec: dict[str, str]) -> IJ_Console | IJ_Dummy_Console:
         if console_sec.get('enabled', 'True') == 'True':
             result = IJ_Console()
             if console_sec.get('read_only', 'False') == 'True':
                 result.read_only = True
         else:
-            result = None
+            result = IJ_Dummy_Console()
         return result
 
     def load_printer(self, printer_data: dict[str, str]) -> IJP_Base:

@@ -17,16 +17,15 @@ class IJCI_Debug(IJCI_Base):
         debug_comm_interfaces[id] = self
 
     def send(self, message: bytes):
-        if console:
-            try:
-                message_str = str(message, 'utf-8')
-            except:
-                message_str = message.hex(' ')
-            console.lock()
-            try:
-                console.incoming.append(f'{self.identifier} << {message_str}')
-            finally:
-                console.release()
+        try:
+            message_str = str(message, 'utf-8')
+        except:
+            message_str = message.hex(' ')
+        console.lock()
+        try:
+            console.incoming.append(f'{self.identifier} << {message_str}')
+        finally:
+            console.release()
 
     def check_receive(self) -> bool:
         return len(self.receive_queue) > 0

@@ -4,7 +4,33 @@ from ij_core import RUN_CORE_ON_SECOND_THREAD
 if RUN_CORE_ON_SECOND_THREAD:
     import _thread
 
-console: IJ_Console = None # type: ignore
+console: IJ_Console | IJ_Dummy_Console = None # type: ignore
+
+class IJ_Dummy_Console:
+    def __init__(self):
+        self.incoming = []
+        self.outgoing = []
+        self.read_only = True
+
+        if RUN_CORE_ON_SECOND_THREAD:
+            self.thread_lock = _thread.allocate_lock()
+
+    def lock(self):
+        if RUN_CORE_ON_SECOND_THREAD:
+            self.thread_lock.acquire()
+
+    def release(self):
+        if RUN_CORE_ON_SECOND_THREAD:
+            self.thread_lock.release()
+
+    def execute(self):
+        if len(self.incoming) > 0:
+            self.lock()
+            try:
+                while len(self.incoming) > 0:
+                    self.incoming.pop(0)
+            finally:
+                self.release()
 
 class IJ_Console:
     def __init__(self):
