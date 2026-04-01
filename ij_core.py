@@ -1,12 +1,14 @@
+RUN_CORE_ON_SECOND_THREAD = True
+
 from ij_printer_base import IJP_Base
 from ij_mmu_base import IJM_Base
-from ij_console import IJ_Console, CONSOLE_THREADED
+from ij_console import IJ_Console
 from ij_command_conversion import command_dict_to_str, command_str_to_dict
+from ij_info import SCRIPT_AUTHOR, SCRIPT_IDENTIFIER, SCRIPT_VERSION
 import gc, os # for stats
 
-SCRIPT_IDENTIFIER = 'IFS Jacker'
-SCRIPT_AUTHOR = 'Namida Verasche (Trumble)'
-SCRIPT_VERSION = '1.0.0'
+if RUN_CORE_ON_SECOND_THREAD:
+    import _thread
 
 class IJ_Core:   
     def __init__(self):
@@ -20,6 +22,9 @@ class IJ_Core:
         self.terminate = False
         self.reboot_flag = True
 
+        if RUN_CORE_ON_SECOND_THREAD:
+            self.finished = False
+
     def write_console(self, text: str | None):
         if self.console and text:
             self.console.lock()
@@ -28,12 +33,21 @@ class IJ_Core:
             finally:
                 self.console.release()
 
+    if RUN_CORE_ON_SECOND_THREAD:
+        def run_threaded(self):
+            _thread.start_new_thread(self.run_threaded_main, ())
+
+        def run_threaded_main(self):
+            while not self.terminate:
+                self.update()
+            self.finished = True
+
     def update(self):
         if self.terminate:
             return
 
         try:
-            if self.console and not CONSOLE_THREADED:
+            if self.console and not RUN_CORE_ON_SECOND_THREAD:
                 self.console.execute()
             
             if self.next_command == None:
@@ -144,7 +158,7 @@ class IJ_Core:
 
         response['console'] = 'Enabled' if self.console else 'Disabled'
         if self.console:
-            response['console_threaded'] = 'Enabled' if CONSOLE_THREADED else 'Disabled'
+            response['core_on_second_thread'] = 'Enabled' if RUN_CORE_ON_SECOND_THREAD else 'Disabled'
 
         self.next_command = response
         self.next_command_origin = f'response-{origin}'

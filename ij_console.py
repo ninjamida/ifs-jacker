@@ -1,7 +1,7 @@
-CONSOLE_THREADED = True
-
 import time, sys, uselect
-if CONSOLE_THREADED:
+from ij_core import RUN_CORE_ON_SECOND_THREAD
+
+if RUN_CORE_ON_SECOND_THREAD:
     import _thread
 
 class IJ_Console:
@@ -20,25 +20,15 @@ class IJ_Console:
 
         self.read_only = False
 
-        if CONSOLE_THREADED:
+        if RUN_CORE_ON_SECOND_THREAD:
             self.thread_lock = _thread.allocate_lock()
 
-    def start_thread(self):
-        _thread.start_new_thread(self.execute_thread, ())
-
-    def execute_thread(self):
-        self.terminate = False
-        self.running = True
-        while not self.terminate:
-            self.execute()
-        self.running = False
-
     def lock(self):
-        if CONSOLE_THREADED:
+        if RUN_CORE_ON_SECOND_THREAD:
             self.thread_lock.acquire()
 
     def release(self):
-        if CONSOLE_THREADED:
+        if RUN_CORE_ON_SECOND_THREAD:
             self.thread_lock.release()
     
     def execute(self):

@@ -1,0 +1,3 @@
+SCRIPT_IDENTIFIER = 'IFS Jacker'
+SCRIPT_AUTHOR = 'Namida Verasche (Trumble)'
+SCRIPT_VERSION = '1.0.0'
