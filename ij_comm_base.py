@@ -133,7 +133,7 @@ class IJCI_UART_EN_Multi_Splitter(IJCI_UART):
             if pin != en_pin:
                 pin.value(self.write_en_state)
 
-    def make_child(self, en_pin_raw: str, auto_set_read_device_after_send_raw: str) -> IJCI_UART_EN_Multi:
+    def make_child(self, en_pin_raw: str, auto_set_read_device_after_send_raw: str = 'True') -> IJCI_UART_EN_Multi:
         en_pin = int(en_pin_raw)
         auto_set_read_device_after_send = (auto_set_read_device_after_send_raw == 'True')
         return IJCI_UART_EN_Multi(parent=self, en_pin=en_pin, auto_set_read_device_after_send=auto_set_read_device_after_send)

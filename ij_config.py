@@ -60,16 +60,26 @@ class IJ_Config_Loader:
         else:
             result = IJ_Dummy_Console()
         return result
+    
+    def get_connection(self, label: str) -> IJCI_Base:
+        if label in self.comm_interfaces:
+            return self.comm_interfaces[label]
+        label_split = label.split(':')
+        if len(label_split) > 1 and label_split[0] in self.comm_interfaces:
+            parent_comm = self.comm_interfaces[label_split[0]]
+            if getattr(parent_comm, 'make_child', None):
+                result = parent_comm.make_child(*label_split[1:])                
+                self.comm_interfaces[label] = result
+                return result
+        
+        return IJCI_Null.make_from_config({})
 
     def load_printer(self, printer_data: dict[str, str]) -> IJP_Base:
         printer_type = printer_data.get('type', 'Null')
         printer_class = self.module_classes.get(f'IJP_{printer_type}', None)
         if printer_class and printer_class != IJP_Null:
             conn_id = printer_data.get('connection', 'Null')
-            conn = self.comm_interfaces.get(conn_id)
-            if conn is None:
-                conn = IJCI_Null.make_from_config({})
-            return printer_class.make_from_config(printer_data, conn)
+            return printer_class.make_from_config(printer_data, self.get_connection(conn_id))
         else:
             return IJP_Null.make_from_config({})
 
@@ -78,10 +88,7 @@ class IJ_Config_Loader:
         mmu_class = self.module_classes.get(f'IJM_{mmu_type}', None)
         if mmu_class and mmu_class != IJM_Null:
             conn_id = mmu_data.get(key_prefix + 'connection', 'Null')
-            conn = self.comm_interfaces.get(conn_id)
-            if conn is None:
-                conn = IJCI_Null.make_from_config({})
-            return mmu_class.make_from_config(mmu_data, conn, key_prefix, self.load_mmu)
+            return mmu_class.make_from_config(mmu_data, self.get_connection(conn_id), key_prefix, self.load_mmu)
         else:
             return IJM_Null.make_from_config({})
 
