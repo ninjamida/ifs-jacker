@@ -115,7 +115,7 @@ class IJ_Core:
             if cmd == None:
                 return
             if cmd.startswith('mmu_response'):
-                targets += 'printer'
+                targets += ['printer']
             else:
                 handler = getattr(self, 'execute_command_' + cmd, None)
                 if handler:
