@@ -229,11 +229,11 @@ class IJ_Core:
         self.next_command_origin = f'response-{origin}'
 
 
-    def execute_command_terminate(self, command: dict[str, str], origin: str):
+    def execute_command_ij_terminate(self, command: dict[str, str], origin: str):
         self.terminate = True
         self.reboot_flag = False
 
-    def execute_command_reboot(self, command: dict[str, str], origin: str):
+    def execute_command_ij_reboot(self, command: dict[str, str], origin: str):
         self.terminate = True
         self.reboot_flag = True
             
