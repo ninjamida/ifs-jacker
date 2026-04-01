@@ -108,11 +108,11 @@ class IJ_Core:
                 if handler:
                     handler(command, origin)
 
-        self.send_command_to_targets(command, targets)
+        self.send_command_to_targets(command, targets, origin)
 
-    def send_command_to_targets(self, command: dict[str, str], targets: list[str]):
+    def send_command_to_targets(self, command: dict[str, str], targets: list[str], origin: str):
         if 'console' in targets and self.console:
-            self.write_console(command_dict_to_str(command))
+            self.write_console(f'{origin} >> {command_dict_to_str(command)}')
         
         if 'printer' in targets and self.printer:
             self.printer.send_response(command)
