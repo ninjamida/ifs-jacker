@@ -107,28 +107,28 @@ class IJM_IFS(IJM_Text_Based):
         return {'command': 'mmu_response_halt_movement'}
     
     def translate_out_mmu_insert_filament(self, command: dict[str, str]) -> str | None:
-        return f"F10 C{int(command['channel']) + 1} L{command['length']} S{command['speed']}"
+        return f"F10 C{int(command['channel']) + 1} L{command['length']} S{command['speed']}\r\n"
     
     def translate_out_mmu_withdraw_filament(self, command: dict[str, str]) -> str | None:
-        return f"F11 C{int(command['channel']) + 1} L{command['length']} S{command['speed']}"
+        return f"F11 C{int(command['channel']) + 1} L{command['length']} S{command['speed']}\r\n"
     
     def translate_out_mmu_get_status(self, command: dict[str, str]) -> str | None:
-        return "F13"
+        return "F13\r\n"
     
     def translate_out_mmu_reset_drivers(self, command: dict[str, str]) -> str | None:
-        return "F15 C"
+        return "F15 C\r\n"
     
     def translate_out_mmu_release_all_channels(self, command: dict[str, str]) -> str | None:
-        return "F18"
+        return "F18\r\n"
     
     def translate_out_mmu_mark_active_channel(self, command: dict[str, str]) -> str | None:
-        return f"F23 C{int(command['channel']) + 1}"
+        return f"F23 C{int(command['channel']) + 1}\r\n"
     
     def translate_out_mmu_clamp_channel(self, command: dict[str, str]) -> str | None:
-        return f"F24 C{int(command['channel']) + 1}"
+        return f"F24 C{int(command['channel']) + 1}\r\n"
     
     def translate_out_mmu_release_channel(self, command: dict[str, str]) -> str | None:
-        return f"F39 C{int(command['channel']) + 1}"
+        return f"F39 C{int(command['channel']) + 1}\r\n"
     
     def translate_out_mmu_halt_movement(self, command: dict[str, str]) -> str | None:
-        return "F112"
+        return "F112\r\n"
