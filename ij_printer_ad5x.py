@@ -4,6 +4,7 @@ from ij_comm_base import IJCI_Base
 class IJP_AD5X(IJP_Text_Based):
     def __init__(self, connection: IJCI_Base):
         super().__init__(connection=connection, seperator=None)
+        self.friendly_name = 'Flashforge_AD5X'
 
     def _translate_in_channel(self, elements: list[str], command: str) -> dict[str, str]:
         result = {'command': command}

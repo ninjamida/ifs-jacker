@@ -24,19 +24,21 @@ class IJ_Config_Loader:
             active_sec = result['']
             with open('ij_config.ini', 'rt') as f:
                 for line in f:
-                    if line.startswith('[') and line.endswidth(']'):
+                    line = line.strip()
+                    if line.startswith('[') and line.endswith(']'):
                         sec_key = line[1:-1]
                         if not sec_key in result:
                             result[sec_key] = {}
                         active_sec = result[sec_key]
-                    elif line.strip() != '':
+                    elif line != '':
                         line_split = line.split('=', 1)
                         if len(line_split) == 2:
                             active_sec[line_split[0].strip()] = line_split[1].strip()
                         else:
                             active_sec[line_split[0].strip()] = ''
             return result
-        except:
+        except Exception as e:
+            print(f"!!! Loading config failed: {e}")
             return {}
 
     def load_config(self, core: IJ_Core):
@@ -69,7 +71,7 @@ class IJ_Config_Loader:
             return IJP_Null.make_from_config({})
 
     def load_mmu(self, mmu_data: dict[str, str], key_prefix: str = '') -> IJM_Base:
-        mmu_type = mmu_data.get('type', 'Null')
+        mmu_type = mmu_data.get(key_prefix + 'type', 'Null')
         mmu_class = self.module_classes.get(f'IJM_{mmu_type}', None)
         if mmu_class and mmu_class != IJM_Null:
             conn_id = mmu_data.get(key_prefix + 'connection', 'Null')

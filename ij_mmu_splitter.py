@@ -107,8 +107,8 @@ class IJM_Splitter(IJM_Base):
         mmus = []
         if load_mmu_func:
             mmu_count = 0
-            while config_data.get(f'{mmu_count}_type', None):
-                mmus += [load_mmu_func(config_data, f'{mmu_count}_')]
+            while config_data.get(f'{key_prefix}{mmu_count}_type', None):
+                mmus += [load_mmu_func(config_data, f'{key_prefix}{mmu_count}_')]
                 mmu_count += 1
         return IJM_Splitter(mmus)
 
