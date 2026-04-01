@@ -3,7 +3,7 @@ from ij_console import IJ_Console
 from ij_comm_base import IJCI_Base, IJCI_Null
 from ij_printer_base import IJP_Base, IJP_Null
 from ij_mmu_base import IJM_Base, IJM_Null
-import importlib, os, inspect
+import os
 
 class IJ_Config_Loader:
     def load_modules(self):
@@ -12,10 +12,10 @@ class IJ_Config_Loader:
         for file in os.listdir('.'):
             if (file.startswith('ij_printer_') or file.startswith('ij_mmu_') or file.startswith('ij_comm_')) and file.endswith('.py'):
                 module_name = file[:-3]
-                module = importlib.import_module(module_name)
+                module = __import__(module_name)
                 for name, attr in module.__dict__.items():
                     if name.startswith('IJP_') or name.startswith('IJM_') or name.startswith('IJCI_'):
-                        if inspect.isclass(attr):
+                        if isinstance(attr, type):
                             self.module_classes[name] = attr
 
     def parse_config_file(self) -> dict[str, dict[str, str]]:
@@ -76,7 +76,7 @@ class IJ_Config_Loader:
             conn = self.comm_interfaces.get(conn_id)
             if conn is None:
                 conn = IJCI_Null.make_from_config({})
-            return mmu_class.make_from_config(mmu_data, conn, key_prefix, self)
+            return mmu_class.make_from_config(mmu_data, conn, key_prefix, self.load_mmu)
         else:
             return IJM_Null.make_from_config({})
 

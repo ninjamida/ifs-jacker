@@ -44,12 +44,12 @@ class IJM_Base:
         return None
     
     @staticmethod
-    def make_from_config(config_data: dict[str, str], connection: IJCI_Base, key_prefix: str = '') -> IJM_Base:
+    def make_from_config(config_data: dict[str, str], connection: IJCI_Base, key_prefix: str = '', load_mmu_func = None) -> IJM_Base:
         return IJM_Base(connection)
     
 class IJM_Null: # Alias    
     @staticmethod
-    def make_from_config(config_data: dict[str, str], connection: IJCI_Base | None = None, key_prefix: str = '') -> IJM_Base:
+    def make_from_config(config_data: dict[str, str], connection: IJCI_Base | None = None, key_prefix: str = '', load_mmu_func = None) -> IJM_Base:
         conn = IJCI_Null.make_from_config({})
         result = IJM_Base(conn)
         result.friendly_name = 'Null'
@@ -93,7 +93,7 @@ class IJM_Text_Based(IJM_Base):
                 return None
             
     @staticmethod
-    def make_from_config(config_data: dict[str, str], connection: IJCI_Base, key_prefix: str = '') -> IJM_Text_Based: # Not that this one is ever useful...
+    def make_from_config(config_data: dict[str, str], connection: IJCI_Base, key_prefix: str = '', load_mmu_func = None) -> IJM_Text_Based: # Not that this one is ever useful...
         seperator = config_data.get(key_prefix + 'seperator', None)
         return IJM_Text_Based(connection, seperator)
     
@@ -127,7 +127,7 @@ class IJM_Text_Based_Direct(IJM_Base):
         return self.cached_channel_count
     
     @staticmethod
-    def make_from_config(config_data: dict[str, str], connection: IJCI_Base, key_prefix: str = '') -> IJM_Text_Based_Direct:
+    def make_from_config(config_data: dict[str, str], connection: IJCI_Base, key_prefix: str = '', load_mmu_func = None) -> IJM_Text_Based_Direct:
         result = IJM_Text_Based_Direct(connection)
         channel_count_raw = config_data.get(key_prefix + 'channels', None)
         if channel_count_raw:
