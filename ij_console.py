@@ -4,6 +4,8 @@ from ij_core import RUN_CORE_ON_SECOND_THREAD
 if RUN_CORE_ON_SECOND_THREAD:
     import _thread
 
+console: IJ_Console = None # type: ignore
+
 class IJ_Console:
     def __init__(self):
         self.input_buffer = ""

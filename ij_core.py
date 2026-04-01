@@ -2,7 +2,8 @@ RUN_CORE_ON_SECOND_THREAD = True
 
 from ij_printer_base import IJP_Base
 from ij_mmu_base import IJM_Base
-from ij_console import IJ_Console
+from ij_console import console
+from ij_comm_debug import debug_comm_interfaces
 from ij_command_conversion import command_dict_to_str, command_str_to_dict
 from ij_info import SCRIPT_AUTHOR, SCRIPT_IDENTIFIER, SCRIPT_VERSION
 import gc, os # for stats
@@ -14,7 +15,6 @@ class IJ_Core:
     def __init__(self):
         self.printer: IJP_Base | None = None
         self.mmu: IJM_Base | None = None
-        self.console: IJ_Console | None = None
 
         self.next_command: dict[str, str] | None = None
         self.next_command_origin: str = ''
@@ -26,12 +26,12 @@ class IJ_Core:
             self.finished = False
 
     def write_console(self, text: str | None):
-        if self.console and text:
-            self.console.lock()
+        if console and text:
+            console.lock()
             try:
-                self.console.incoming += [text]
+                console.incoming += [text]
             finally:
-                self.console.release()
+                console.release()
 
     if RUN_CORE_ON_SECOND_THREAD:
         def run_threaded(self):
@@ -47,8 +47,8 @@ class IJ_Core:
             return
 
         try:
-            if self.console and not RUN_CORE_ON_SECOND_THREAD:
-                self.console.execute()
+            if console and not RUN_CORE_ON_SECOND_THREAD:
+                console.execute()
             
             if self.next_command == None:
                 self.get_next_command()
@@ -65,11 +65,11 @@ class IJ_Core:
             self.write_console(f"Exception occurred in core: {e}")
 
     def get_next_command(self):
-        if self.console:
-            if len(self.console.outgoing) > 0:
-                self.console.lock()
+        if console:
+            if len(console.outgoing) > 0:
+                console.lock()
                 try:
-                    new_cmd = self.console.outgoing.pop(0)
+                    new_cmd = console.outgoing.pop(0)
                     new_cmd = command_str_to_dict(new_cmd)
                     if new_cmd != None:
                         self.next_command = new_cmd
@@ -78,7 +78,7 @@ class IJ_Core:
                 except:
                     pass
                 finally:
-                    self.console.release()
+                    console.release()
 
         if self.printer:
             while self.printer.check_receive_commands():
@@ -126,7 +126,7 @@ class IJ_Core:
         self.send_command_to_targets(command, targets, origin)
 
     def send_command_to_targets(self, command: dict[str, str], targets: list[str], origin: str):
-        if 'console' in targets and self.console:
+        if 'console' in targets and console:
             self.write_console(f'{origin} >> {command_dict_to_str(command)}')
         
         if 'printer' in targets and self.printer:
@@ -156,8 +156,8 @@ class IJ_Core:
         fs_size = fs_stats[2] * fs_stats[0]
         response['memory_storage'] = f'{fs_size - (fs_stats[3] * fs_stats[0])}/{fs_size}'
 
-        response['console'] = 'Enabled' if self.console else 'Disabled'
-        if self.console:
+        response['console'] = 'Enabled' if console else 'Disabled'
+        if console:
             response['core_on_second_thread'] = 'Enabled' if RUN_CORE_ON_SECOND_THREAD else 'Disabled'
 
         self.next_command = response
@@ -174,6 +174,12 @@ class IJ_Core:
         command['command'] = 'ij_response_echo'
         self.next_command = command
         self.next_command_origin = f'response-{origin}'
+
+    def execute_command_ij_debug_input(self, command: dict[str, str], origin: str):
+        input_data = command.get('data', '')
+        target = debug_comm_interfaces.get(command.get('target', ''), None)
+        if target:
+            target.receive_queue.append(input_data)
 
     def execute_command_terminate(self, command: dict[str, str], origin: str):
         self.terminate = True

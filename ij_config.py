@@ -1,5 +1,5 @@
 from ij_core import IJ_Core
-from ij_console import IJ_Console
+from ij_console import IJ_Console, console
 from ij_comm_base import IJCI_Base, IJCI_Null
 from ij_printer_base import IJP_Base, IJP_Null
 from ij_mmu_base import IJM_Base, IJM_Null
@@ -42,21 +42,25 @@ class IJ_Config_Loader:
             return {}
 
     def load_config(self, core: IJ_Core):
+        global console
         self.load_modules()
 
         file_data = self.parse_config_file()
 
         self.load_comm_interfaces(file_data)
 
-        self.load_console_settings(core, file_data.get('Console', {}))
+        console = self.load_console_settings(file_data.get('Console', {}))
         core.printer = self.load_printer(file_data.get('Printer', {}))
         core.mmu = self.load_mmu(file_data.get('MMU', {}))
 
-    def load_console_settings(self, core: IJ_Core, console_sec: dict[str, str]):
+    def load_console_settings(self, console_sec: dict[str, str]) -> IJ_Console | None:
         if console_sec.get('enabled', 'True') == 'True':
-            core.console = IJ_Console()
+            result = IJ_Console()
             if console_sec.get('read_only', 'False') == 'True':
-                core.console.read_only = True
+                result.read_only = True
+        else:
+            result = None
+        return result
 
     def load_printer(self, printer_data: dict[str, str]) -> IJP_Base:
         printer_type = printer_data.get('type', 'Null')
