@@ -7,8 +7,12 @@ class IJP_Base:
     def __init__(self, connection: IJCI_Base):
         self.connection = connection
         self.friendly_name = 'Base_Placeholder'
+        self.out_cmd_queue: list[dict[str, str]] = []
 
     def receive_command(self, wait_timeout: float = 0) -> dict[str, str] | None:
+        if len(self.out_cmd_queue) > 0:
+            return self.out_cmd_queue.pop(0)
+        
         result = None
         deadline = time.ticks_add(time.ticks_ms(), int(wait_timeout * 1000))
         while True:

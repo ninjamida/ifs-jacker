@@ -32,6 +32,9 @@ class IJM_Splitter(IJM_Base):
         return self._receive_data(wait_timeout, False)
 
     def _receive_data(self, wait_timeout: float, raw: bool) -> dict[str, str] | None:
+        if len(self.out_cmd_queue) > 0:
+            return self.out_cmd_queue.pop(0)
+        
         last_mmu = self.mmu_list[self.last_used_mmu]
 
         result = None
@@ -166,18 +169,21 @@ class IJM_Splitter(IJM_Base):
         
         # Copy anything starting with channel_ from ALL the MMUs. Anything else, only from the last used oned.
 
-        result = {}
+        result = {'command': 'mmu_response_get_status'}
 
-        for key, value in mmu_statuses[self.last_used_mmu]:
+        for key, value in mmu_statuses[self.last_used_mmu].items():
             if not key.startswith('channel_'):
                 result[key] = value
 
         for status in mmu_statuses:
-            for key, value in status:
+            for key, value in status.items():
                 if key.startswith('channel_'):
                     result[key] = value
 
-        return result
+        if wait_for_response:
+            return result
+        else:
+            self.out_cmd_queue.append(result)
     
     def handle_out_mmu_reset_drivers(self, command: dict[str, str], wait_for_response: bool) -> dict[str, str] | None:
         return self._handle_out_send_all(command, wait_for_response)

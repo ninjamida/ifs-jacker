@@ -8,11 +8,15 @@ class IJM_Base:
         self.connection = connection
         self.command_response_wait_timeout = 1
         self.friendly_name = "Base_Placeholder"
+        self.out_cmd_queue: list[dict[str, str]] = []
 
     def get_channel_count(self) -> int:
         return 0
     
     def receive_data(self, wait_timeout: float = 0) -> dict[str, str] | None:
+        if len(self.out_cmd_queue) > 0:
+            return self.out_cmd_queue.pop(0)
+
         result = None
         deadline = time.ticks_add(time.ticks_ms(), int(wait_timeout * 1000))
         while True:
