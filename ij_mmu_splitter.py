@@ -10,7 +10,7 @@ class IJM_Splitter(IJM_Base):
         self.mmu_recheck_frequency = 10 * 1000 # Every X ms, checks that the child MMU channel counts haven't changed. Unlikely to happen but not impossible, especially during initial startup.
         self.mmu_recheck_deadline = time.ticks_add(time.ticks_ms(), self.mmu_recheck_frequency)
 
-        self.friendly_name = 'Splitter'
+        self.friendly_name = 'MMU Splitter'
         for i, mmu in enumerate(self.mmu_list):
             self.friendly_name += f'__{i}_{mmu.friendly_name}'
 

@@ -7,7 +7,7 @@ class IJM_Base:
     def __init__(self, connection: IJCI_Base):
         self.connection = connection
         self.command_response_wait_timeout = 1
-        self.friendly_name = "Base_Placeholder"
+        self.friendly_name = "Base Placeholder"
         self.out_cmd_queue: list[dict[str, str]] = []
 
     def get_channel_count(self) -> int:
@@ -75,7 +75,7 @@ class IJM_Text_Based(IJM_Base):
     def __init__(self, connection: IJCI_Base, seperator: str | None = None):
         super().__init__(connection)
         self.seperator = seperator
-        self.friendly_name = "Base_Placeholder_Text_Based"
+        self.friendly_name = "Base Placeholder Text Based"
 
     def get_plugin_status(self, response: dict[str, str]):
         super().get_plugin_status(response)
@@ -124,7 +124,7 @@ class IJM_Text_Based_Direct(IJM_Base):
     # Jackers together.
     def __init__(self, connection: IJCI_Base):
         super().__init__(connection)
-        self.friendly_name = 'Direct_IJ_Command'
+        self.friendly_name = 'Direct IJ Command'
         self.cached_channel_count: int | None = None
 
     def translate_command(self, message: bytes) -> dict[str, str] | None:

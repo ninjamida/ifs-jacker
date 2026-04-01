@@ -4,7 +4,7 @@ from ij_comm_base import IJCI_Base
 class IJP_AD5X(IJP_Text_Based):
     def __init__(self, connection: IJCI_Base):
         super().__init__(connection=connection, seperator=None)
-        self.friendly_name = 'Flashforge_AD5X'
+        self.friendly_name = 'Flashforge AD5X'
 
     def _translate_in_channel(self, elements: list[str], command: str) -> dict[str, str]:
         result = {'command': command}
@@ -23,9 +23,9 @@ class IJP_AD5X(IJP_Text_Based):
             if param.startswith('C'):
                 result['channel'] = str(int(param[1:]) - 1)
             if param.startswith('L'):
-                result['channel'] = param[1:]
+                result['length'] = param[1:]
             if param.startswith('S'):
-                result['channel'] = param[1:]
+                result['speed'] = param[1:]
         
         return result
     

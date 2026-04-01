@@ -17,7 +17,7 @@ class IJCI_Debug(IJCI_Base):
             id = f'debug{i}'
         self.identifier = id
         debug_comm_interfaces[id] = self
-        self.friendly_name = f'Debug_Comm_{id}'
+        self.friendly_name = f'Debug Comm {id}'
 
     def send(self, message: bytes):
         try:

@@ -3,7 +3,7 @@ import time
 
 class IJCI_Base:
     def __init__(self):
-        self.friendly_name = 'Base_Placeholder'
+        self.friendly_name = 'Base Placeholder'
         self.internal_name = ''
 
     def send(self, message: bytes):
@@ -89,7 +89,7 @@ class IJCI_UART_EN(IJCI_UART):
         super().__init__(uart_channel=uart_channel, tx_pin=tx_pin, rx_pin=rx_pin, baud=baud, bits=bits, parity=parity, stop_bits=stop_bits)
         self.en_pin = Pin(en_pin, Pin.OUT, value=not write_en_state)
         self.write_en_state = write_en_state
-        self.friendly_name = 'UART_With_EN_Pin'
+        self.friendly_name = 'UART With EN Pin'
 
     def send(self, message: bytes):
         self.en_pin.value(self.write_en_state)
@@ -124,7 +124,7 @@ class IJCI_UART_EN_Multi_Splitter(IJCI_UART):
         super().__init__(uart_channel=uart_channel, tx_pin=tx_pin, rx_pin=rx_pin, baud=baud, bits=bits, parity=parity, stop_bits=stop_bits)
         self.write_en_state = write_en_state
         self.en_pins = []
-        self.friendly_name = 'UART_With_EN_PIN_Splitter'
+        self.friendly_name = 'UART With EN PIN Splitter'
 
     def set_write_device(self, en_pin: Pin):
         for pin in self.en_pins:
@@ -172,7 +172,7 @@ class IJCI_UART_EN_Multi(IJCI_Base):
         self.en_pin = Pin(en_pin, Pin.OUT, value=initial_en_pin_state)
         self.auto_set_read_device_after_send = auto_set_read_device_after_send
         parent.en_pins += [self.en_pin]
-        self.friendly_name = 'UART_With_EN_Pin_Split_Client'
+        self.friendly_name = 'UART With EN Pin Split Client'
         self.internal_name = parent.internal_name + f'_en{en_pin}'
 
     def send(self, message: bytes):
