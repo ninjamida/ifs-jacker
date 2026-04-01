@@ -3,6 +3,9 @@ from ij_console import console
 
 debug_comm_interfaces: dict[str, IJCI_Debug] = {}
 
+def get_debug_comm_interfaces() -> dict[str, IJCI_Debug]:
+    return debug_comm_interfaces
+
 class IJCI_Debug(IJCI_Base):
     def __init__(self, id: str | None):
         global debug_comm_interfaces

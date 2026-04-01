@@ -3,7 +3,7 @@ RUN_CORE_ON_SECOND_THREAD = True
 from ij_printer_base import IJP_Base
 from ij_mmu_base import IJM_Base
 from ij_console import IJ_Console, console
-from ij_comm_debug import debug_comm_interfaces
+from ij_comm_debug import get_debug_comm_interfaces
 from ij_command_conversion import command_dict_to_str, command_str_to_dict
 from ij_info import SCRIPT_AUTHOR, SCRIPT_IDENTIFIER, SCRIPT_VERSION
 import gc, os # for stats
@@ -175,9 +175,17 @@ class IJ_Core:
 
     def execute_command_ij_debug_input(self, command: dict[str, str], origin: str):
         input_data = command.get('data', '')
-        target = debug_comm_interfaces.get(command.get('target', ''), None)
+        target = get_debug_comm_interfaces().get(command.get('target', ''), None)
         if target:
             target.receive_queue.append(input_data)
+
+    def execute_command_ij_get_debug_inputs(self, command: dict[str, str], origin: str):
+        response = {'command': 'ij_response_get_debug_inputs'}
+        inputs = ' '.join([f"'{name}'" for name in get_debug_comm_interfaces().keys()])
+        response['inputs'] = inputs
+        
+        self.next_command = response
+        self.next_command_origin = f'response-{origin}'
 
     def execute_command_terminate(self, command: dict[str, str], origin: str):
         self.terminate = True
