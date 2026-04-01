@@ -4,7 +4,14 @@ from ij_core import RUN_CORE_ON_SECOND_THREAD
 if RUN_CORE_ON_SECOND_THREAD:
     import _thread
 
-console: IJ_Console | IJ_Dummy_Console = None # type: ignore
+_console: IJ_Console | IJ_Dummy_Console = None # type: ignore
+
+def console() -> IJ_Console | IJ_Dummy_Console:
+    return _console
+
+def set_console(new_console: IJ_Console | IJ_Dummy_Console):
+    global _console
+    _console = new_console
 
 class IJ_Dummy_Console:
     def __init__(self):

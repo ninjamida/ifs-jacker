@@ -27,11 +27,11 @@ class IJ_Core:
 
     def write_console(self, text: str | None):
         if text:
-            console.lock()
+            console().lock()
             try:
-                console.incoming += [text]
+                console().incoming += [text]
             finally:
-                console.release()
+                console().release()
 
     if RUN_CORE_ON_SECOND_THREAD:
         def run_threaded(self):
@@ -48,7 +48,7 @@ class IJ_Core:
 
         try:
             if not RUN_CORE_ON_SECOND_THREAD:
-                console.execute()
+                console().execute()
             
             if self.next_command == None:
                 self.get_next_command()
@@ -65,10 +65,10 @@ class IJ_Core:
             self.write_console(f"Exception occurred in core: {e}")
 
     def get_next_command(self):
-        if len(console.outgoing) > 0:
-            console.lock()
+        if len(console().outgoing) > 0:
+            console().lock()
             try:
-                new_cmd = console.outgoing.pop(0)
+                new_cmd = console().outgoing.pop(0)
                 new_cmd = command_str_to_dict(new_cmd)
                 if new_cmd != None:
                     self.next_command = new_cmd
@@ -77,7 +77,7 @@ class IJ_Core:
             except:
                 pass
             finally:
-                console.release()
+                console().release()
 
         if self.printer:
             while self.printer.check_receive_commands():
@@ -155,7 +155,7 @@ class IJ_Core:
         fs_size = fs_stats[2] * fs_stats[0]
         response['memory_storage'] = f'{fs_size - (fs_stats[3] * fs_stats[0])}/{fs_size}'
 
-        response['console'] = 'Enabled' if console is IJ_Console else 'Disabled'
+        response['console'] = 'Enabled' if console() is IJ_Console else 'Disabled'
         response['core_on_second_thread'] = 'Enabled' if RUN_CORE_ON_SECOND_THREAD else 'Disabled'
 
         self.next_command = response

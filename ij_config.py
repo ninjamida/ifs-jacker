@@ -1,5 +1,5 @@
 from ij_core import IJ_Core
-from ij_console import IJ_Console, IJ_Dummy_Console, console
+from ij_console import IJ_Console, IJ_Dummy_Console, set_console
 from ij_comm_base import IJCI_Base, IJCI_Null
 from ij_printer_base import IJP_Base, IJP_Null
 from ij_mmu_base import IJM_Base, IJM_Null
@@ -38,18 +38,17 @@ class IJ_Config_Loader:
                             active_sec[line_split[0].strip()] = ''
             return result
         except Exception as e:
-            print(f"!!! Loading config failed: {e}")
+            print(f"!!! Parsing config file failed: {e}")
             return {}
 
     def load_config(self, core: IJ_Core):
-        global console
         self.load_modules()
 
         file_data = self.parse_config_file()
 
         self.load_comm_interfaces(file_data)
 
-        console = self.load_console_settings(file_data.get('Console', {}))
+        set_console(self.load_console_settings(file_data.get('Console', {})))
         core.printer = self.load_printer(file_data.get('Printer', {}))
         core.mmu = self.load_mmu(file_data.get('MMU', {}))
 
