@@ -5,7 +5,7 @@ from ij_command_conversion import command_dict_to_str, command_str_to_dict
 
 SCRIPT_IDENTIFIER = 'IFS Jacker'
 SCRIPT_AUTHOR = 'Namida Verasche (Trumble)'
-SCRIPT_VERSION = '0.70'
+SCRIPT_VERSION = '0.2.0'
 
 class IJ_Core:   
     def __init__(self):
@@ -127,13 +127,20 @@ class IJ_Core:
         response['script_author'] = SCRIPT_AUTHOR
         response['script_version'] = SCRIPT_VERSION
 
-        response['printer_type'] = type(self.printer).__name__ if self.printer is not None else 'None'
-        response['mmu_type'] = type(self.mmu).__name__ if self.mmu is not None else 'None'
+        response['printer_type'] = self.printer.friendly_name if self.printer is not None else 'None'
+        response['mmu_type'] = self.mmu.friendly_name if self.mmu is not None else 'None'
         response['channels'] = str(self.mmu.get_channel_count() if self.mmu else 0)
 
         response['console'] = 'Enabled' if self.console else 'Disabled'
         if self.console:
             response['console_threaded'] = 'Enabled' if CONSOLE_THREADED else 'Disabled'
+
+        self.next_command = response
+        self.next_command_origin = f'response-{origin}'
+
+    def execute_command_ij_get_channel_count(self, command: dict[str, str], origin: str):
+        response = {'command': 'ij_response_get_channel_count'}
+        response['channels'] = str(self.mmu.get_channel_count() if self.mmu else 0)
 
         self.next_command = response
         self.next_command_origin = f'response-{origin}'

@@ -9,6 +9,10 @@ class IJM_IFS(IJM_Text_Based):
     def get_channel_count(self) -> int:
         return 4
     
+    @staticmethod
+    def make_from_config(config_data: dict[str, str], connection: IJCI_Base, key_prefix: str = '') -> IJM_IFS:
+        return IJM_IFS(connection)
+    
     def translate_in_F10(self, elements: list[str]) -> dict[str, str]:
         return {
             'command': 'mmu_response_insert_filament',

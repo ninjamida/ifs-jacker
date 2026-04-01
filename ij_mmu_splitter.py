@@ -1,4 +1,5 @@
 from ij_mmu_base import IJM_Base
+import time
 
 class IJM_Splitter(IJM_Base):
     def __init__(self, mmu_list: list[IJM_Base]):
@@ -6,6 +7,8 @@ class IJM_Splitter(IJM_Base):
         self.mmu_list = mmu_list
         self.build_channel_map()
         self.last_used_mmu = 0
+        self.mmu_recheck_frequency = 10 * 1000 # Every X ms, checks that the child MMU channel counts haven't changed. Unlikely to happen but not impossible, especially during initial startup.
+        self.mmu_recheck_deadline = time.ticks_add(time.ticks_ms(), self.mmu_recheck_frequency)
 
         self.friendly_name = 'Splitter'
         for i, mmu in enumerate(self.mmu_list):
@@ -13,13 +16,14 @@ class IJM_Splitter(IJM_Base):
 
     def build_channel_map(self):
         total_channels = 0
-        result = []
+        self.channel_map = []
         self.channel_start_index = [-1] * len(self.mmu_list)
+        self.cached_channel_counts = [-1] * len(self.mmu_list)
         for i, mmu in enumerate(self.mmu_list):
             self.channel_start_index[i] = total_channels
-            total_channels += mmu.get_channel_count()
-            result += [i] * (total_channels - len(result))
-        self.channel_map = result
+            self.cached_channel_counts[i] = mmu.get_channel_count()
+            total_channels += self.cached_channel_counts[i]
+            self.channel_map += [i] * (total_channels - len(self.channel_map))
 
     def get_channel_count(self) -> int:
         return len(self.channel_map)
@@ -84,6 +88,29 @@ class IJM_Splitter(IJM_Base):
             return None
         else:
             return handle_function(self, command, wait_for_response)
+        
+    def update(self):
+        if time.ticks_diff(self.mmu_recheck_deadline, time.ticks_ms()) < 0:
+            need_redo = False
+            for i in range(len(self.mmu_list)):
+                if self.mmu_list[i].get_channel_count() != self.cached_channel_counts[i]:
+                    need_redo = True
+                    break
+            
+            if need_redo:
+                self.build_channel_map()
+
+            self.mmu_recheck_deadline = time.ticks_add(time.ticks_ms(), self.mmu_recheck_frequency)
+    
+    @staticmethod
+    def make_from_config(config_data: dict[str, str], connection = None, key_prefix: str = '', load_mmu_func = None) -> IJM_Splitter:
+        mmus = []
+        if load_mmu_func:
+            mmu_count = 0
+            while config_data.get(f'{mmu_count}_type', None):
+                mmus += [load_mmu_func(config_data, f'{mmu_count}_')]
+                mmu_count += 1
+        return IJM_Splitter(mmus)
 
     def _handle_out_channel_based(self, command: dict[str, str], wait_for_response: bool) -> dict[str, str] | None:
         channel = command.get('channel', None)

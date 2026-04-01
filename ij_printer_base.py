@@ -1,10 +1,11 @@
-from ij_comm_base import IJCI_Base
+from ij_comm_base import IJCI_Base, IJCI_Null
 from ij_command_conversion import command_dict_to_str, command_str_to_dict
 import time
 
 class IJP_Base:
     def __init__(self, connection: IJCI_Base):
         self.connection = connection
+        self.friendly_name = 'Base_Placeholder'
 
     def receive_command(self, wait_timeout: float = 0) -> dict[str, str] | None:
         result = None
@@ -33,11 +34,24 @@ class IJP_Base:
     
     def translate_response(self, response: dict[str, str]) -> bytes | None:
         return None
+    
+    @staticmethod
+    def make_from_config(config_data: dict[str, str], connection: IJCI_Base) -> IJP_Base:
+        return IJP_Base(connection)
+
+class IJP_Null: # Alias
+    @staticmethod
+    def make_from_config(config_data: dict[str, str], connection: IJCI_Base | None = None) -> IJP_Base:
+        conn = IJCI_Null.make_from_config({})
+        result = IJP_Base(conn)
+        result.friendly_name = 'Null'
+        return result
 
 class IJP_Text_Based(IJP_Base):
     def __init__(self, connection: IJCI_Base, seperator: str | None = None):
         super().__init__(connection)
         self.seperator = seperator
+        self.friendly_name = "Base_Placeholder_Text_Based"
 
     def translate_command(self, message: bytes) -> dict[str, str] | None:
         text_cmd = str(message, 'utf-8')
@@ -69,11 +83,21 @@ class IJP_Text_Based(IJP_Base):
                 return result.encode('utf-8')
             else:
                 return None
+    
+    @staticmethod
+    def make_from_config(config_data: dict[str, str], connection: IJCI_Base) -> IJP_Text_Based: # Not that this one is ever useful...
+        seperator = config_data.get('seperator', None)
+        return IJP_Text_Based(connection, seperator)
         
 class IJP_Text_Based_Direct(IJP_Base):
     # Directly takes IFS Jacker internal commands, and relays IFS Jacker internal responses.
     # This is intended for use with custom printers / custom integrations into other printers,
-    # as it is likely cleaner than trying to emulate an AD5X.
+    # as it is likely cleaner than trying to emulate an AD5X. It can also be used to chain IFS
+    # Jackers together.
+    def __init__(self, connection: IJCI_Base):
+        super().__init__(connection)
+        self.friendly_name = 'Direct_IJ_Command'
+
     def translate_command(self, message: bytes) -> dict[str, str] | None:
         return command_str_to_dict(str(message, 'utf-8'))
     
@@ -83,3 +107,7 @@ class IJP_Text_Based_Direct(IJP_Base):
             return None
         else:
             return result.encode('utf-8')
+    
+    @staticmethod
+    def make_from_config(config_data: dict[str, str], connection: IJCI_Base) -> IJP_Text_Based_Direct:
+        return IJP_Text_Based_Direct(connection)

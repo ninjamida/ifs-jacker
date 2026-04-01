@@ -27,6 +27,10 @@ class IJP_AD5X(IJP_Text_Based):
                 result['channel'] = param[1:]
         
         return result
+    
+    @staticmethod
+    def make_from_config(config_data: dict[str, str], connection: IJCI_Base) -> IJP_AD5X:
+        return IJP_AD5X(connection)
 
     def translate_in_F10(self, elements: list[str]) -> dict[str, str]:
         return self._translate_in_channel_length_speed(elements, 'mmu_insert_filament')

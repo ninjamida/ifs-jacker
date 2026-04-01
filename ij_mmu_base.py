@@ -1,4 +1,5 @@
-from ij_comm_base import IJCI_Base
+from ij_comm_base import IJCI_Base, IJCI_Null
+from ij_command_conversion import command_dict_to_str, command_str_to_dict
 import time
 
 class IJM_Base:
@@ -42,6 +43,18 @@ class IJM_Base:
     def translate_response(self, message: bytes) -> dict[str, str] | None:
         return None
     
+    @staticmethod
+    def make_from_config(config_data: dict[str, str], connection: IJCI_Base, key_prefix: str = '') -> IJM_Base:
+        return IJM_Base(connection)
+    
+class IJM_Null: # Alias    
+    @staticmethod
+    def make_from_config(config_data: dict[str, str], connection: IJCI_Base | None = None, key_prefix: str = '') -> IJM_Base:
+        conn = IJCI_Null.make_from_config({})
+        result = IJM_Base(conn)
+        result.friendly_name = 'Null'
+        return result
+    
 class IJM_Text_Based(IJM_Base):
     def __init__(self, connection: IJCI_Base, seperator: str | None = None):
         super().__init__(connection)
@@ -78,3 +91,45 @@ class IJM_Text_Based(IJM_Base):
                 return result.encode('utf-8')
             else:
                 return None
+            
+    @staticmethod
+    def make_from_config(config_data: dict[str, str], connection: IJCI_Base, key_prefix: str = '') -> IJM_Text_Based: # Not that this one is ever useful...
+        seperator = config_data.get(key_prefix + 'seperator', None)
+        return IJM_Text_Based(connection, seperator)
+    
+class IJM_Text_Based_Direct(IJM_Base):
+    # Directly takes IFS Jacker internal commands, and relays IFS Jacker internal responses.
+    # This is intended for use with custom printers / custom integrations into other printers,
+    # as it is likely cleaner than trying to emulate an AD5X. It can also be used to chain IFS
+    # Jackers together.
+    def __init__(self, connection: IJCI_Base):
+        super().__init__(connection)
+        self.friendly_name = 'Direct_IJ_Command'
+        self.cached_channel_count: int | None = None
+
+    def translate_command(self, message: bytes) -> dict[str, str] | None:
+        return command_str_to_dict(str(message, 'utf-8'))
+    
+    def translate_response(self, response: dict[str, str]) -> bytes | None:
+        result = command_dict_to_str(response)
+        if result == None:
+            return None
+        else:
+            return result.encode('utf-8')
+        
+    def get_channel_count(self) -> int:
+        if not self.cached_channel_count:
+            channel_count_response = self.send_command({'command': 'ij_get_channel_count'}, True)
+            if channel_count_response:
+                self.cached_channel_count = int(channel_count_response.get('channels', 0))
+            else:
+                return 0
+        return self.cached_channel_count
+    
+    @staticmethod
+    def make_from_config(config_data: dict[str, str], connection: IJCI_Base, key_prefix: str = '') -> IJM_Text_Based_Direct:
+        result = IJM_Text_Based_Direct(connection)
+        channel_count_raw = config_data.get(key_prefix + 'channels', None)
+        if channel_count_raw:
+            result.cached_channel_count = int(channel_count_raw)
+        return result

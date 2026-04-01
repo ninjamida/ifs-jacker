@@ -11,6 +11,7 @@ class IJCI_Console(IJCI_Base):
         self.queue = []
         self.polling = uselect.poll()
         self.polling.register(sys.stdin, uselect.POLLIN)
+        self.friendly_name = 'Console'
 
     def send(self, message: bytes):
         try:

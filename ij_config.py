@@ -1,6 +1,8 @@
 from ij_core import IJ_Core
 from ij_console import IJ_Console
-from ij_comm_base import IJCI_Base
+from ij_comm_base import IJCI_Base, IJCI_Null
+from ij_printer_base import IJP_Base, IJP_Null
+from ij_mmu_base import IJM_Base, IJM_Null
 import importlib, os, inspect
 
 class IJ_Config_Loader:
@@ -44,22 +46,39 @@ class IJ_Config_Loader:
 
         self.load_comm_interfaces(file_data)
 
-        self.load_console_settings(core, file_data)
+        self.load_console_settings(core, file_data.get('Console', {}))
         core.printer = self.load_printer(file_data.get('Printer', {}))
         core.mmu = self.load_mmu(file_data.get('MMU', {}))
 
-    def load_console_settings(self, core: IJ_Core, file_data: dict[str, dict[str, str]]):
-        console_sec = file_data.get('Console', {})
+    def load_console_settings(self, core: IJ_Core, console_sec: dict[str, str]):
         if console_sec.get('enabled', 'False') == 'True':
             core.console = IJ_Console()
             if console_sec.get('read_only', 'False') == 'True':
                 core.console.read_only = True
 
-    def load_printer(self, printer_data: dict[str, str]):
-        pass
+    def load_printer(self, printer_data: dict[str, str]) -> IJP_Base:
+        printer_type = printer_data.get('type', 'Null')
+        printer_class = self.module_classes.get(f'IJP_{printer_type}', None)
+        if printer_class and printer_class != IJP_Null:
+            conn_id = printer_data.get('connection', 'Null')
+            conn = self.comm_interfaces.get(conn_id)
+            if conn is None:
+                conn = IJCI_Null.make_from_config({})
+            return printer_class.make_from_config(printer_data, conn)
+        else:
+            return IJP_Null.make_from_config({})
 
-    def load_mmu(self, mmu_data: dict[str, str]):
-        pass
+    def load_mmu(self, mmu_data: dict[str, str], key_prefix: str = '') -> IJM_Base:
+        mmu_type = mmu_data.get('type', 'Null')
+        mmu_class = self.module_classes.get(f'IJM_{mmu_type}', None)
+        if mmu_class and mmu_class != IJM_Null:
+            conn_id = mmu_data.get(key_prefix + 'connection', 'Null')
+            conn = self.comm_interfaces.get(conn_id)
+            if conn is None:
+                conn = IJCI_Null.make_from_config({})
+            return mmu_class.make_from_config(mmu_data, conn, key_prefix, self)
+        else:
+            return IJM_Null.make_from_config({})
 
     def load_comm_interfaces(self, file_data: dict[str, dict[str, str]]):
         self.comm_interfaces = {}
@@ -67,11 +86,12 @@ class IJ_Config_Loader:
         for sec_key, sec_value in file_data.items():
             if sec_key.startswith('Comm_'):
                 interface_name = sec_key[5:]
-                interface_type = sec_value.get('type', None)
-                if interface_type:
-                    interface_class = self.module_classes.get(f'IJCI_{interface_type}', None)
-                    if interface_class:
-                        self.comm_interfaces[interface_name] = interface_class.make_from_config(sec_value)
+                interface_type = sec_value.get('type', 'Null')
+                interface_class = self.module_classes.get(f'IJCI_{interface_type}', None)
+                if interface_class:
+                    self.comm_interfaces[interface_name] = interface_class.make_from_config(sec_value)
+                else:
+                    self.comm_interfaces[interface_name] = IJCI_Null.make_from_config({})
     
     def get_comm_interface(self, interface_name: str) -> IJCI_Base:
         if interface_name in self.comm_interfaces:
