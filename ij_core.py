@@ -6,7 +6,7 @@ from ij_console import IJ_Console, console
 from ij_comm_base import IJCI_Base
 from ij_comm_debug import get_debug_comm_interfaces
 from ij_command_conversion import command_dict_to_str, command_str_to_dict
-from ij_info import SCRIPT_AUTHOR, SCRIPT_IDENTIFIER, SCRIPT_VERSION
+from ij_misc import SCRIPT_AUTHOR, SCRIPT_IDENTIFIER, SCRIPT_VERSION, get_traceback_string
 import gc, os # for stats
 
 if RUN_CORE_ON_SECOND_THREAD:
@@ -23,6 +23,8 @@ class IJ_Core:
         
         self.terminate = False
         self.reboot_flag = True
+
+        self.full_error_details = True
 
         if RUN_CORE_ON_SECOND_THREAD:
             self.finished = False
@@ -65,6 +67,9 @@ class IJ_Core:
             raise
         except Exception as e:
             self.write_console(f"Exception occurred in core: {e}")
+            if self.full_error_details:
+                for line in get_traceback_string(e):
+                    self.write_console(line)
 
     def get_next_command(self):
         if len(console().outgoing) > 0:
@@ -147,12 +152,11 @@ class IJ_Core:
         response['mmu_type'] = self.mmu.friendly_name if self.mmu is not None else 'None'
         response['channels'] = str(self.mmu.get_channel_count() if self.mmu else 0)
 
-        mem_alloc = gc.mem_alloc()
-        response['memory_ram_before_collect'] = f'{mem_alloc}/{mem_alloc + gc.mem_free()}'
+        total_mem = gc.mem_alloc() + gc.mem_free()
+        response['memory_ram_before_collect'] = f'{gc.mem_alloc()}/{total_mem}'
         if command.get('gc', 'False') == 'True':
             gc.collect()
-            mem_alloc = gc.mem_alloc()
-            response['memory_ram_after_collect'] = f'{mem_alloc}/{mem_alloc + gc.mem_free()}'
+            response['memory_ram_after_collect'] = f'{gc.mem_alloc()}/{total_mem}'
         fs_stats = os.statvfs('/') # type: ignore
         fs_size = fs_stats[2] * fs_stats[0]
         response['memory_storage'] = f'{fs_size - (fs_stats[3] * fs_stats[0])}/{fs_size}'

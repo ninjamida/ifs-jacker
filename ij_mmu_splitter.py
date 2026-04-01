@@ -49,12 +49,15 @@ class IJM_Splitter(IJM_Base):
                 result = last_mmu.receive_data(wait_timeout)
                 source_mmu = self.last_used_mmu
 
-        if result == None or raw:
+        if raw:
             return result
         
         return self.adjust_channels(result, source_mmu)
         
-    def adjust_channels(self, command: dict[str, str], source_mmu: int) -> dict[str, str]:
+    def adjust_channels(self, command: dict[str, str] | None, source_mmu: int) -> dict[str, str] | None:
+        if command is None:
+            return None
+
         if 'channel' in command:
             command['channel'] = str(int(command['channel']) + self.channel_start_index[source_mmu])
         
@@ -87,7 +90,7 @@ class IJM_Splitter(IJM_Base):
         if handle_function == None:
             return None
         else:
-            return handle_function(self, command, wait_for_response)
+            return handle_function(command, wait_for_response)
         
     def update(self):
         if time.ticks_diff(self.mmu_recheck_deadline, time.ticks_ms()) < 0:

@@ -14,11 +14,13 @@ class IJM_Base:
     def receive_data(self, wait_timeout: float = 0) -> dict[str, str] | None:
         result = None
         deadline = time.ticks_add(time.ticks_ms(), int(wait_timeout * 1000))
-        while time.ticks_diff(deadline, time.ticks_ms()) > 0:
+        while True:
             if self.connection.check_receive():
                 new_response = self.translate_response(self.connection.receive())
                 if new_response:
                     result = new_response
+                break
+            if time.ticks_diff(deadline, time.ticks_ms()) <= 0:
                 break
         return result
     

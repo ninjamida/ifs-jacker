@@ -53,6 +53,11 @@ class IJ_Config_Loader:
         core.mmu = self.load_mmu(file_data.get('MMU', {}))
         core.comm_interfaces = self.comm_interfaces
 
+        self.load_misc_settings(file_data.get('Misc', {}), core)
+
+    def load_misc_settings(self, misc_sec: dict[str, str], core: IJ_Core):
+        core.full_error_details = misc_sec.get('full_error_details') == 'True'
+
     def load_console_settings(self, console_sec: dict[str, str]) -> IJ_Console | IJ_Dummy_Console:
         if console_sec.get('enabled', 'True') == 'True':
             result = IJ_Console()
