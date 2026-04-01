@@ -2,6 +2,7 @@ from ij_printer_base import IJP_Base
 from ij_mmu_base import IJM_Base
 from ij_console import IJ_Console, CONSOLE_THREADED
 from ij_command_conversion import command_dict_to_str, command_str_to_dict
+import gc, os # for stats
 
 SCRIPT_IDENTIFIER = 'IFS Jacker'
 SCRIPT_AUTHOR = 'Namida Verasche (Trumble)'
@@ -130,6 +131,16 @@ class IJ_Core:
         response['printer_type'] = self.printer.friendly_name if self.printer is not None else 'None'
         response['mmu_type'] = self.mmu.friendly_name if self.mmu is not None else 'None'
         response['channels'] = str(self.mmu.get_channel_count() if self.mmu else 0)
+
+        mem_alloc = gc.mem_alloc()
+        response['memory_ram_before_collect'] = f'{mem_alloc}/{mem_alloc + gc.mem_free()}'
+        if command.get('gc', 'False') == 'True':
+            gc.collect()
+            mem_alloc = gc.mem_alloc()
+            response['memory_ram_after_collect'] = f'{mem_alloc}/{mem_alloc + gc.mem_free()}'
+        fs_stats = os.statvfs('/') # type: ignore
+        fs_size = fs_stats[2] * fs_stats[0]
+        response['memory_storage'] = f'{fs_size - (fs_stats[3] * fs_stats[0])}/{fs_size}'
 
         response['console'] = 'Enabled' if self.console else 'Disabled'
         if self.console:
