@@ -40,7 +40,7 @@ def command_str_to_dict(cmd: str) -> dict[str, str] | None:
                 ((c == ' ' or c == '\t') and not quote_active) or
                 i == len(cmd_split[1]) - 1
                 ):
-                if (quote_active or (c != ' ' and c != '\t')) and not char_already_added:
+                if (quote_active or (c != ' ' and c != '\t')) and c != '"' and not char_already_added:
                     build_str += c
 
                 if param_name is None:

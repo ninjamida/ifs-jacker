@@ -10,7 +10,7 @@ class IJP_AD5X(IJP_Text_Based):
         result = {'command': command}
         for param in elements[1:]:
             if param.startswith('C'):
-                result['channel'] = param[1:]
+                result['channel'] = str(int(param[1:]) - 1)
         
         return result
 
