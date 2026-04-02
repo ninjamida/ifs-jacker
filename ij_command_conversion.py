@@ -21,6 +21,7 @@ def command_str_to_dict(cmd: str) -> dict[str, str] | None:
         escape_active = False
         build_str = ''
         param_name = None
+        char_already_added = False # used in the edge case of the final character also being an escaped character
         for i, c in enumerate(cmd_split[1]):
             if escape_active:
                 if c == 'r':
@@ -32,11 +33,16 @@ def command_str_to_dict(cmd: str) -> dict[str, str] | None:
                 escape_active = False
                 if i < len(cmd_split[1]) - 1:
                     continue
+                else:
+                    char_already_added = True
 
             if (
                 ((c == ' ' or c == '\t') and not quote_active) or
                 i == len(cmd_split[1]) - 1
                 ):
+                if (quote_active or (c != ' ' and c != '\t')) and not char_already_added:
+                    build_str += c
+
                 if param_name is None:
                     if len(build_str) > 0:
                         result[build_str] = ''
