@@ -225,6 +225,9 @@ class IJ_Core:
         self.next_command_origin = f'response-{origin}'
 
 
+    def execute_command_ij_null(self, command: dict[str, str], origin: str):
+        pass
+
     def execute_command_ij_terminate(self, command: dict[str, str], origin: str):
         self.terminate = True
         self.reboot_flag = False

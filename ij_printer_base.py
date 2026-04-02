@@ -17,11 +17,14 @@ class IJP_Base:
         deadline = time.ticks_add(time.ticks_ms(), int(wait_timeout * 1000))
         while True:
             if self.connection.check_receive():
-                new_cmd = self.translate_command(self.connection.receive())
-                if new_cmd:
-                    result = new_cmd
-                else:
-                    console().write(f"ERROR on printer {self.friendly_name}: could not translate input", 'error')
+                incoming = self.connection.receive()
+                if self.precheck_incoming(incoming):
+                    new_cmd = self.translate_command(incoming)
+                    if new_cmd:
+                        if new_cmd.get('command', 'ij_null') != 'ij_null':
+                            result = new_cmd
+                    else:
+                        console().write(f"ERROR on printer {self.friendly_name}: could not translate input  [ {incoming.hex(' ')} ]", 'error')
                 break
             if time.ticks_diff(deadline, time.ticks_ms()) <= 0:
                 break
@@ -39,6 +42,9 @@ class IJP_Base:
 
     def update(self):
         pass
+
+    def precheck_incoming(self, message: bytes) -> bool:
+        return len(message) > 0
 
     def get_plugin_status(self, response: dict[str, str]):
         response['friendly_name'] = self.friendly_name
@@ -73,7 +79,10 @@ class IJP_Text_Based(IJP_Base):
         response['seperator'] = self.seperator if self.seperator else 'None'
 
     def translate_command(self, message: bytes) -> dict[str, str] | None:
-        text_cmd = str(message, 'utf-8')
+        try:
+            text_cmd = str(message, 'utf-8')
+        except:
+            return None
 
         if self.seperator == None:
             elements = text_cmd.split()

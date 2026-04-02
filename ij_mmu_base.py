@@ -82,7 +82,10 @@ class IJM_Text_Based(IJM_Base):
         response['seperator'] = self.seperator if self.seperator else 'None'
     
     def translate_response(self, message: bytes) -> dict[str, str] | None:
-        text_response = str(message, 'utf-8')
+        try:
+            text_response = str(message, 'utf-8')
+        except:
+            return None
 
         if self.seperator == None:
             elements = text_response.split()

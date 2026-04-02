@@ -6,6 +6,17 @@ class IJP_AD5X(IJP_Text_Based):
         super().__init__(connection=connection, seperator=None)
         self.friendly_name = 'Flashforge AD5X'
 
+    def translate_command(self, message: bytes) -> dict[str, str] | None:
+        if len(message) == 1 and message[0] == 0xFF:
+            return {'command': 'ij_null'}
+        return super().translate_command(message)
+    
+    def precheck_incoming(self, message: bytes) -> bool:
+        if len(message) == 1 and message[0] == 0xFF:
+            return False
+        else:
+            return super().precheck_incoming(message)
+
     def _translate_in_channel(self, elements: list[str], command: str) -> dict[str, str]:
         result = {'command': command}
         for param in elements[1:]:
