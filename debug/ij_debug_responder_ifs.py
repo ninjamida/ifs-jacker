@@ -30,3 +30,10 @@ class IJDR_IFS:
         
         if response:
             receive_queue.append(response)
+
+class IJDR_IFS2(IJDR_IFS):
+    def respond(self, message: str, receive_queue: list[str]):
+        if message.startswith('F13'):
+            receive_queue.append('F13 ok. FFS_state: 5 silk_state: 6 chan: 3 ffs_channels_insert: 0 stall_state: 0 jinsi_GCONF: 000001dc qiehuan_GCONF: 000001dc')
+        else:
+            return super().respond(message, receive_queue)

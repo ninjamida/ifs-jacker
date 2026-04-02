@@ -26,9 +26,12 @@ class IJCI_Debug(IJCI_Base):
             message_str = str(message, 'utf-8')
         except:
             message_str = message.hex(' ')
-        console().write(f'{self.identifier} << {message_str}', 'comm')
+        console().write(f'{self.identifier} <--- {message_str}', 'comm')
         if self.responder:
+            old_queue_len = len(self.receive_queue)
             self.responder.respond(message_str, self.receive_queue)
+            for new_line in self.receive_queue[old_queue_len:]:
+                console().write(f'{self.identifier} ---> {new_line}', 'comm')
 
     def check_receive(self) -> bool:
         return len(self.receive_queue) > 0
