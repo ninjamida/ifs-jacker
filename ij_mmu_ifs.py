@@ -88,13 +88,13 @@ class IJM_IFS(IJM_Text_Based):
     def translate_in_F23(self, elements: list[str]) -> dict[str, str]:
         return {
             'command': 'mmu_response_mark_active_channel',
-            'channel': str(int(elements[3]) - 1)
+            'channel': str(int(elements[4][:-1]) - 1)
         }
     
     def translate_in_F24(self, elements: list[str]) -> dict[str, str]:
         return {
             'command': 'mmu_response_clamp_channel',
-            'channel': str(int(elements[3]) - 1)
+            'channel': str(int(elements[4][:-1]) - 1)
         }
     
     def translate_in_F39(self, elements: list[str]) -> dict[str, str]:

@@ -64,7 +64,7 @@ class IJM_Splitter(IJM_Base):
         if 'channel' in command:
             command['channel'] = str(int(command['channel']) + self.channel_start_index[source_mmu])
         
-        if command.get('command', None) == 'mmu_respond_get_status':
+        if command.get('command', None) == 'mmu_response_get_status' and self.channel_start_index[source_mmu] > 0:
             mmu = self.mmu_list[source_mmu]
             active_channel = int(command.get('active_channel', '-1'))
             if active_channel >= 0:
@@ -75,11 +75,12 @@ class IJM_Splitter(IJM_Base):
                     if key.startswith(f'channel_{i}'):
                         new_key = key.replace(f'channel_{i}', f'channel_{i + self.channel_start_index[source_mmu]}')
                         command[new_key] = command[key]
-                        command.pop(key)                
-        
+                        command.pop(key)         
         return command
         
     def check_receive_data(self) -> bool:
+        if len(self.out_cmd_queue) > 0:
+            return True
         for mmu in self.mmu_list:
             if mmu.check_receive_data():
                 return True
