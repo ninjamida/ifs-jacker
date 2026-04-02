@@ -84,15 +84,17 @@ class IJ_Console:
         try:
             if len(self.incoming) > 0:
                 sys.stdout.write('\r\x1b[K')
+                new_lines = []
                 self.lock()
                 try:
                     while len(self.incoming) > 0:
-                        line = self.incoming.pop(0)
-                        line_text = f"{time.ticks_ms():0{self.timestamp_digits}d}  {line}"
-                        print(line_text)
-                    self.need_refresh_prompt = True
+                        new_lines.append(self.incoming.pop(0))
                 finally:
                     self.release()
+                for line in new_lines:
+                    line_text = f"{time.ticks_ms():0{self.timestamp_digits}d}  {line}"
+                    print(line_text)
+                self.need_refresh_prompt = True
 
             console_input = self.check_input()
             if console_input != None:
