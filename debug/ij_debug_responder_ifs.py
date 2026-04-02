@@ -20,9 +20,9 @@ class IJDR_IFS:
         if message.startswith('F18'):
             response = 'F18 ok'
         if message.startswith('F23'):
-            response = f'F23 ok. FFS chan {channel}.'
+            response = f'F23 ok. chan {channel}.'
         if message.startswith('F24'):
-            response = f'F24 ok. FFS chan {channel}.'
+            response = f'F24 ok. chan {channel}.'
         if message.startswith('F39'):
             response = f'F39 ok. FFS channel {channel} release.'
         if message.startswith('F112'):
