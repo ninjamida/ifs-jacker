@@ -79,6 +79,31 @@ class IJM_Text_Based(IJM_Base):
         self.friendly_name = "Base Placeholder Text Based"
         self.error_handling = 'strict'
 
+        self.response_hold_time = 0
+        self.response_hold_command = None
+        self.response_hold_deadline = time.ticks_ms()
+        self.send_queue: list[dict[str, str]] = []
+
+    def send_command(self, command: dict[str, str], wait_for_response: bool = True) -> dict[str, str] | None:
+        if self.response_hold_command is None or time.ticks_diff(self.response_hold_deadline, time.ticks_ms()) < 0:
+            result = super().send_command(command, wait_for_response)
+            if result == None and self.response_hold_time > 0:
+                self.response_hold_command = command.get('command', '').replace('mmu_', 'mmu_response_', 1)
+                self.response_hold_deadline = time.ticks_add(time.ticks_ms(), self.response_hold_time)
+        else:
+            self.send_queue.append(command) # Can't wait for response in this case. Too bad.
+    
+    def receive_data(self, wait_timeout: float = 0) -> dict[str, str] | None:
+        result = super().receive_data(wait_timeout)
+        if result and result.get('command', None) == self.response_hold_command:
+            self.response_hold_command = None
+
+    def update(self):
+        if len(self.send_queue) > 0:
+            if self.response_hold_command is None or time.ticks_diff(self.response_hold_deadline, time.ticks_ms()) < 0:
+                cmd = self.send_queue.pop(0)
+                self.send_command(cmd)
+
     def get_plugin_status(self, response: dict[str, str]):
         super().get_plugin_status(response)
         response['seperator'] = self.seperator if self.seperator else 'None'
