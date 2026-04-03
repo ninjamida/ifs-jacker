@@ -1,5 +1,3 @@
-RUN_CORE_ON_SECOND_THREAD = True
-
 from ij_printer_base import IJP_Base
 from ij_mmu_base import IJM_Base
 from ij_console import IJ_Console, console
@@ -8,9 +6,6 @@ from ij_comm_debug import get_debug_comm_interfaces
 from ij_command_conversion import command_dict_to_str, command_str_to_dict
 from ij_misc import SCRIPT_AUTHOR, SCRIPT_IDENTIFIER, SCRIPT_VERSION, get_traceback_string
 import gc, os # for stats
-
-if RUN_CORE_ON_SECOND_THREAD:
-    import _thread
 
 class IJ_Core:   
     def __init__(self):
@@ -26,26 +21,11 @@ class IJ_Core:
 
         self.full_error_details = True
 
-        if RUN_CORE_ON_SECOND_THREAD:
-            self.finished = False
-
-    if RUN_CORE_ON_SECOND_THREAD:
-        def run_threaded(self):
-            _thread.start_new_thread(self.run_threaded_main, ())
-
-        def run_threaded_main(self):
-            while not self.terminate:
-                self.update()
-            self.finished = True
-
     def update(self):
         if self.terminate:
             return
 
         try:
-            if not RUN_CORE_ON_SECOND_THREAD:
-                console().execute()
-            
             if self.next_command == None:
                 self.get_next_command()
 
@@ -63,7 +43,7 @@ class IJ_Core:
         except KeyboardInterrupt:
             raise
         except Exception as e:
-            console().write(f"Exception occurred in core: {e}", 'error')
+            console().write(f"Core exception: {e}", 'error')
             if self.full_error_details:
                 for line in get_traceback_string(e):
                     console().write(line, 'error')
@@ -158,8 +138,7 @@ class IJ_Core:
         fs_size = fs_stats[2] * fs_stats[0]
         response['memory_storage'] = f'{fs_size - (fs_stats[3] * fs_stats[0])}/{fs_size}'
 
-        response['console'] = 'Enabled' if console() is IJ_Console else 'Disabled'
-        response['core_on_second_thread'] = 'Enabled' if RUN_CORE_ON_SECOND_THREAD else 'Disabled'
+        response['console'] = 'Enabled' if isinstance(console(), IJ_Console) else 'Disabled'
 
         self.next_command = response
         self.next_command_origin = f'response-{origin}'

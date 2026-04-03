@@ -75,6 +75,7 @@ class IJP_Text_Based(IJP_Base):
         super().__init__(connection)
         self.seperator = seperator
         self.friendly_name = "Base Placeholder Text Based"
+        self.error_handling = 'strict'
 
     def get_plugin_status(self, response: dict[str, str]):
         super().get_plugin_status(response)
@@ -82,7 +83,7 @@ class IJP_Text_Based(IJP_Base):
 
     def translate_command(self, message: bytes) -> dict[str, str] | None:
         try:
-            text_cmd = str(message, 'utf-8')
+            text_cmd = str(message, 'utf-8', self.error_handling)
         except:
             return None
 
@@ -117,7 +118,9 @@ class IJP_Text_Based(IJP_Base):
     @staticmethod
     def make_from_config(config_data: dict[str, str], connection: IJCI_Base) -> IJP_Text_Based: # Not that this one is ever useful...
         seperator = config_data.get('seperator', None)
-        return IJP_Text_Based(connection, seperator)
+        result = IJP_Text_Based(connection, seperator)
+        result.error_handling = config_data.get('error_handling', result.error_handling)
+        return result
         
 class IJP_Text_Based_Direct(IJP_Base):
     # Directly takes IFS Jacker internal commands, and relays IFS Jacker internal responses.
@@ -127,9 +130,10 @@ class IJP_Text_Based_Direct(IJP_Base):
     def __init__(self, connection: IJCI_Base):
         super().__init__(connection)
         self.friendly_name = 'Direct IJ Command'
+        self.error_handling = 'strict'
 
     def translate_command(self, message: bytes) -> dict[str, str] | None:
-        return command_str_to_dict(str(message, 'utf-8'))
+        return command_str_to_dict(str(message, 'utf-8', self.error_handling))
     
     def translate_response(self, response: dict[str, str]) -> bytes | None:
         result = command_dict_to_str(response)
@@ -140,4 +144,6 @@ class IJP_Text_Based_Direct(IJP_Base):
     
     @staticmethod
     def make_from_config(config_data: dict[str, str], connection: IJCI_Base) -> IJP_Text_Based_Direct:
-        return IJP_Text_Based_Direct(connection)
+        result = IJP_Text_Based_Direct(connection)
+        result.error_handling = config_data.get('error_handling', result.error_handling)
+        return result
