@@ -8,6 +8,7 @@ class IJP_Base:
         self.connection = connection
         self.friendly_name = 'Base Placeholder'
         self.out_cmd_queue: list[dict[str, str]] = []
+        self.send_empty_data = False
 
     def receive_command(self, wait_timeout: float = 0) -> dict[str, str] | None:
         if len(self.out_cmd_queue) > 0:
@@ -35,8 +36,9 @@ class IJP_Base:
         
     def send_response(self, response: dict[str, str]):
         new_response = self.translate_response(response)
-        if new_response:
-            self.connection.send(new_response)
+        if new_response is not None:
+            if self.send_empty_data or len(new_response) > 0:
+                self.connection.send(new_response)
         else:
             console().write(f"ERROR on printer {self.friendly_name}: could not translate command {response.get('command', '<Undefined>')}", 'error')
 

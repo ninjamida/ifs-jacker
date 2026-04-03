@@ -55,6 +55,11 @@ class IJ_Core:
                 self.next_command = None
                 self.next_command_origin = ''
                 self.execute_command(cmd, origin)
+
+            if self.printer:
+                self.printer.update()
+            if self.mmu:
+                self.mmu.update()
         except KeyboardInterrupt:
             raise
         except Exception as e:

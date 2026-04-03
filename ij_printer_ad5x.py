@@ -5,14 +5,31 @@ class IJP_AD5X(IJP_Text_Based):
     def __init__(self, connection: IJCI_Base):
         super().__init__(connection=connection, seperator=None)
         self.friendly_name = 'Flashforge AD5X'
+        self.await_release = False
+        self.queued_data = []
 
     def translate_command(self, message: bytes) -> dict[str, str] | None:
-        if len(message) == 1 and message[0] == 0xFF:
-            return {'command': 'ij_null'}
-        return super().translate_command(message)
+        result = super().translate_command(message)
+        if result:
+            self.await_release = True
+        return result
+    
+    def translate_response(self, response: dict[str, str]) -> bytes | None:
+        result = super().translate_response(response)
+        if self.await_release:
+            self.queued_data.append(result)
+            return bytes()
+        else:
+            return result
+        
+    def update(self):
+        if not self.await_release:
+            while len(self.queued_data) > 0:
+                self.connection.send(self.queued_data.pop(0))
     
     def precheck_incoming(self, message: bytes) -> bool:
         if len(message) == 1 and message[0] == 0xFF:
+            self.await_release = False
             return False
         else:
             return super().precheck_incoming(message)

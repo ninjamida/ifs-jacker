@@ -97,6 +97,9 @@ class IJM_Splitter(IJM_Base):
             return handle_function(command, wait_for_response)
         
     def update(self):
+        for mmu in self.mmu_list:
+            mmu.update()
+
         if time.ticks_diff(self.mmu_recheck_deadline, time.ticks_ms()) < 0:
             need_redo = False
             for i in range(len(self.mmu_list)):
