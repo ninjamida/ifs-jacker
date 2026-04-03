@@ -119,12 +119,16 @@ class IJCI_UART_EN(IJCI_UART):
             )
 
 class IJCI_UART_EN_Multi_Splitter(IJCI_UART):
-    def __init__(self, uart_channel: int, tx_pin: int, rx_pin: int, write_en_state:bool=True, baud: int=115200,
+    def __init__(self, uart_channel: int, tx_pin: int, rx_pin: int, en_dummy_pins: list[int] = [], write_en_state:bool=True, baud: int=115200,
                  bits: int=8, parity:int|None=None, stop_bits: int=1):
         super().__init__(uart_channel=uart_channel, tx_pin=tx_pin, rx_pin=rx_pin, baud=baud, bits=bits, parity=parity, stop_bits=stop_bits)
         self.write_en_state = write_en_state
-        self.en_pins = []
+        self.en_pins: list[Pin] = []
         self.friendly_name = 'UART With EN PIN Splitter'
+
+        for pin_id in en_dummy_pins:
+            initial_state = write_en_state if (len(self.en_pins) == 0) else not write_en_state
+            self.en_pins += [Pin(pin_id, Pin.OUT, value=initial_state)]
 
     def set_write_device(self, en_pin: Pin):
         for pin in self.en_pins:
@@ -154,10 +158,14 @@ class IJCI_UART_EN_Multi_Splitter(IJCI_UART):
         else:
             parity = None
 
+        en_pins_raw = comm_data.get('en_dummy_pins', '')
+        en_dummy_pins = [int(en_pin.strip()) for en_pin in en_pins_raw.split(',')]
+
         return IJCI_UART_EN_Multi_Splitter(
             uart_channel = instance,
             tx_pin = int(comm_data.get('tx_pin', instance * 4)),
             rx_pin = int(comm_data.get('rx_pin', instance * 4 + 1)),
+            en_dummy_pins = en_dummy_pins,
             baud = int(comm_data.get('baud', 115200)),
             bits = int(comm_data.get('bits', 8)),
             parity = parity,
@@ -171,7 +179,8 @@ class IJCI_UART_EN_Multi(IJCI_Base):
         initial_en_pin_state = parent.write_en_state if (len(parent.en_pins) == 0) else not parent.write_en_state
         self.en_pin = Pin(en_pin, Pin.OUT, value=initial_en_pin_state)
         self.auto_set_read_device_after_send = auto_set_read_device_after_send
-        parent.en_pins += [self.en_pin]
+        if en_pin not in parent.en_pins:
+            parent.en_pins += [self.en_pin]
         self.friendly_name = 'UART With EN Pin Split Client'
         self.internal_name = parent.internal_name + f'_en{en_pin}'
 
