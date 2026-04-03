@@ -159,7 +159,10 @@ class IJCI_UART_EN_Multi_Splitter(IJCI_UART):
             parity = None
 
         en_pins_raw = comm_data.get('en_dummy_pins', '')
-        en_dummy_pins = [int(en_pin.strip()) for en_pin in en_pins_raw.split(',')]
+        if len(en_pins_raw) > 0:
+            en_dummy_pins = [int(en_pin.strip()) for en_pin in en_pins_raw.split(',')]
+        else:
+            en_dummy_pins = []
 
         return IJCI_UART_EN_Multi_Splitter(
             uart_channel = instance,
@@ -179,8 +182,7 @@ class IJCI_UART_EN_Multi(IJCI_Base):
         initial_en_pin_state = parent.write_en_state if (len(parent.en_pins) == 0) else not parent.write_en_state
         self.en_pin = Pin(en_pin, Pin.OUT, value=initial_en_pin_state)
         self.auto_set_read_device_after_send = auto_set_read_device_after_send
-        if en_pin not in parent.en_pins:
-            parent.en_pins += [self.en_pin]
+        parent.en_pins += [self.en_pin]
         self.friendly_name = 'UART With EN Pin Split Client'
         self.internal_name = parent.internal_name + f'_en{en_pin}'
 
