@@ -21,11 +21,12 @@ class IJM_Base:
         deadline = time.ticks_add(time.ticks_ms(), int(wait_timeout * 1000))
         while True:
             if self.connection.check_receive():
-                new_response = self.translate_response(self.connection.receive())
+                data = self.connection.receive()
+                new_response = self.translate_response(data)
                 if new_response:
                     result = new_response
                 else:
-                    console().write(f"ERROR on MMU {self.friendly_name}: could not translate input", 'error')
+                    console().write(f"ERROR on MMU {self.friendly_name}: could not translate input [ {data.hex(' ')} ]", 'error')
                 break
             if time.ticks_diff(deadline, time.ticks_ms()) <= 0:
                 break
