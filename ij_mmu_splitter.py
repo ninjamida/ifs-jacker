@@ -1,18 +1,29 @@
 from ij_mmu_base import IJM_Base
 import time
 
+# Limitations of splitter:
+# - Doesn't receive live responses from MMUs; responses may be received but this is after the splitter responds.
+# - "Get status" command works but may be slower to update than an actual MMU.
+# - Only works with passive MMUs (or MMUs that will tolerate their active communication being ignored).
+# - Another downstream IFS Jacker run through the splitter should work.
+
 class IJM_Splitter(IJM_Base):
     def __init__(self, mmu_list: list[IJM_Base]):
         super().__init__(None) # type: ignore
         self.mmu_list = mmu_list
         self.build_channel_map()
         self.initialize_status()
-        self.last_used_mmu = 0
+        self.active_channel_mmu = 0
+        self.last_commanded_mmu = 0
         self.mmu_recheck_frequency = 10 * 1000 # Every X ms, checks that the child MMU channel counts haven't changed. Unlikely to happen but not impossible, especially during initial startup.
         self.mmu_recheck_deadline = time.ticks_add(time.ticks_ms(), self.mmu_recheck_frequency)
 
         self.next_idle_mmu_check = 0
-        self.idle_command_queue: list[tuple] = [] # mmu index (int), discard response? (bool), command (dict[str, str])
+        self.idle_command_queue: list[tuple] = [] # mmu index (int), high priority (bool), command (dict[str, str])
+        self.idle_command_wait = int(0.5 * 1000) # After this long with no response, it is assumed one is not coming
+        self.idle_awaiting_response_type = ''
+        self.next_idle_command_time = time.ticks_add(time.ticks_ms(), self.idle_command_wait)
+        # Queued commands labelled "high priority" will not be overridden by the active status MMU checking
 
         self.friendly_name = 'MMU Splitter'
         for i, mmu in enumerate(self.mmu_list):
@@ -41,8 +52,8 @@ class IJM_Splitter(IJM_Base):
 
         self.mmu_get_status_response = mmu_get_status_response
 
-    def set_last_used_mmu(self, mmu_index: int):
-        self.last_used_mmu = mmu_index
+    def set_active_channel_mmu(self, mmu_index: int):
+        self.active_channel_mmu = mmu_index
         self.next_idle_mmu_check = mmu_index
         self.mmu_get_status_response['global_status'] = 'querying'
 
@@ -56,27 +67,7 @@ class IJM_Splitter(IJM_Base):
         if len(self.out_cmd_queue) > 0:
             return self.out_cmd_queue.pop(0)
         
-        last_mmu = self.mmu_list[self.last_used_mmu]
-
-        result = None
-
-        if last_mmu.check_receive_data():
-            result = last_mmu.receive_data()
-            source_mmu = self.last_used_mmu
-        else:
-            for i, mmu in enumerate(self.mmu_list):
-                if mmu != last_mmu and mmu.check_receive_data():
-                    result = mmu.receive_data()
-                    source_mmu = i
-                    break
-            if wait_timeout > 0 and result == None:
-                result = last_mmu.receive_data(wait_timeout)
-                source_mmu = self.last_used_mmu
-
-        if raw:
-            return result
-        
-        return self.adjust_channels(result, source_mmu)
+        return None
         
     def adjust_channels(self, command: dict[str, str] | None, source_mmu: int) -> dict[str, str] | None:
         if command is None:
@@ -100,12 +91,7 @@ class IJM_Splitter(IJM_Base):
         return command
         
     def check_receive_data(self) -> bool:
-        if len(self.out_cmd_queue) > 0:
-            return True
-        for mmu in self.mmu_list:
-            if mmu.check_receive_data():
-                return True
-        return False
+        return len(self.out_cmd_queue) > 0
 
     def send_command(self, command: dict[str, str], wait_for_response: bool = True) -> dict[str, str] | None:
         command_action = command.get('command', None)
@@ -115,10 +101,26 @@ class IJM_Splitter(IJM_Base):
         if handle_function == None:
             return None
         else:
-            return handle_function(command, wait_for_response)
+            result = handle_function(command, wait_for_response)
+            if wait_for_response:
+                return result
+            else:
+                self.out_cmd_queue.append(result)
+                return None
         
     def update(self):
         for mmu in self.mmu_list:
+            if mmu.check_receive_data():
+                command = mmu.receive_data()
+                if command:
+                    command_action = command.get('command', None)
+                    if command_action:
+                        if command_action == self.idle_awaiting_response_type:
+                            self.idle_awaiting_response_type = ''
+                            self.next_idle_command_time = time.ticks_ms()
+                        handle_function = getattr(self, f'handle_in_{command_action}', None)
+                        if handle_function:
+                            handle_function(command)
             mmu.update()
 
         if time.ticks_diff(self.mmu_recheck_deadline, time.ticks_ms()) < 0:
@@ -133,27 +135,64 @@ class IJM_Splitter(IJM_Base):
 
             self.mmu_recheck_deadline = time.ticks_add(time.ticks_ms(), self.mmu_recheck_frequency)
 
-    def process_idle_queue(self, force_mmu_check: int | None = None):
-        if len(self.idle_command_queue) > 0 and force_mmu_check is None:
-            mmu_index, discard_response, command = self.idle_command_queue.pop()
-            self.mmu_list[mmu_index].send_command(command, discard_response)
+        self.process_idle_queue()
+    
+    def queue_command(self, target_mmu: int, high_priority: bool, command: dict[str, str], force_to_front: bool = False):
+        insert_index = 0
+        if force_to_front:
+            high_priority = True
+        elif high_priority:
+            while insert_index < len(self.idle_command_queue) and self.idle_command_queue[insert_index][1]:
+                insert_index += 1
         else:
-            if force_mmu_check is not None:
-                self.next_idle_mmu_check = force_mmu_check
-            self.update_get_status_response(self.next_idle_mmu_check)
-            self.next_idle_mmu_check = (self.next_idle_mmu_check + 1) % len(self.mmu_list)
+            insert_index = len(self.idle_command_queue)
 
-    def update_get_status_response(self, mmu_index: int):
-        response = self.adjust_channels(self.mmu_list[mmu_index].send_command({'command': 'mmu_get_status'}, True), mmu_index)
-        if response:
-            for key, value in response.items():
-                if mmu_index == self.last_used_mmu or key.startswith('channel_'):
+        self.idle_command_queue.insert(insert_index, (target_mmu, high_priority, command))
+
+    def process_idle_queue(self):
+        if time.ticks_diff(self.next_idle_command_time, time.ticks_ms()) > 0:
+            return
+
+        if len(self.idle_command_queue) > 0:
+            next_target, next_high_priority, next_command = self.idle_command_queue[0]
+            next_from_queue = True
+        else:
+            next_target, next_high_priority, next_command = 0, False, None
+            next_from_queue = False
+
+        if not next_high_priority and self.mmu_get_status_response['global_state'] != 'ok':
+            next_target = self.active_channel_mmu
+            next_command = {'command': 'mmu_get_status'}
+            if self.next_idle_mmu_check == self.active_channel_mmu:
+                self.next_idle_mmu_check += 1
+            next_from_queue = False
+
+        if next_command == None:
+            self.next_idle_mmu_check %= len(self.mmu_list)
+            next_target = self.next_idle_mmu_check
+            self.next_idle_mmu_check += 1
+            next_command = {'command': 'mmu_get_status'}
+            next_from_queue = False
+
+        if next_from_queue:
+            self.idle_command_queue.pop(0)
+
+        self.mmu_list[next_target].send_command(next_command, False)
+        self.idle_awaiting_response_type = next_command.get('command', '').replace('mmu_', 'mmu_response_', 1)
+        self.next_idle_command_time = time.ticks_add(time.ticks_ms(), self.idle_command_wait)
+        self.last_commanded_mmu = next_target
+
+    def update_get_status_response(self, command: dict[str, str] | None, mmu_index: int):
+        command = self.adjust_channels(command, mmu_index)
+        if command:
+            for key, value in command.items():
+                if mmu_index == self.active_channel_mmu or key.startswith('channel_'):
                     self.mmu_get_status_response[key] = value
 
     def get_plugin_status(self, response: dict[str, str]):
         super().get_plugin_status(response)
         response['mmu_count'] = str(len(self.mmu_list))
-        response['last_used_mmu'] = str(self.last_used_mmu)
+        response['active_channel_mmu'] = str(self.active_channel_mmu)
 
         for i, mmu in enumerate(self.mmu_list):
             this_response = {}
@@ -171,7 +210,7 @@ class IJM_Splitter(IJM_Base):
                 mmu_count += 1
         return IJM_Splitter(mmus)
 
-    def _handle_out_channel_based(self, command: dict[str, str], wait_for_response: bool) -> dict[str, str] | None:
+    def _handle_out_channel_based(self, command: dict[str, str], wait_for_response: bool, force_to_front: bool = False) -> dict[str, str] | None:
         channel = command.get('channel', None)
         if channel == None:
             return None
@@ -182,18 +221,18 @@ class IJM_Splitter(IJM_Base):
         channel -= self.channel_start_index[mmu_index]
         command['channel'] = str(channel)
 
-        self.set_last_used_mmu(mmu_index)
-        result = self.mmu_list[mmu_index].send_command(command, wait_for_response)
-        result = self.adjust_channels(result, mmu_index)
+        self.set_active_channel_mmu(mmu_index)
+        self.queue_command(mmu_index, True, command, force_to_front)
 
-        return result
+        return {'command': command.get('command', '').replace('mmu_', 'mmu_response_', 1), 'channel': str(channel)}
     
-    def _handle_out_send_all(self, command: dict[str, str], wait_for_response: bool) -> dict[str, str] | None:
+    def _handle_out_send_all(self, command: dict[str, str], wait_for_response: bool, force_to_front: bool = False) -> dict[str, str] | None:
+        self.queue_command(self.active_channel_mmu, True, command, force_to_front)
         for i in range(len(self.mmu_list)):
-            if i != self.last_used_mmu:
-                self.idle_command_queue.append((i, True, command))
+            if i != self.active_channel_mmu:
+                self.queue_command(i, True, command)
         
-        return self.mmu_list[self.last_used_mmu].send_command(command, wait_for_response)
+        return {'command': command.get('command', '').replace('mmu_', 'mmu_response_', 1)}
 
     def handle_out_mmu_insert_filament(self, command: dict[str, str], wait_for_response: bool) -> dict[str, str] | None:
         return self._handle_out_channel_based(command, wait_for_response)
@@ -202,11 +241,7 @@ class IJM_Splitter(IJM_Base):
         return self._handle_out_channel_based(command, wait_for_response)
     
     def handle_out_mmu_get_status(self, command: dict[str, str], wait_for_response: bool) -> dict[str, str] | None:
-        self.process_idle_queue(None if self.mmu_get_status_response['global_state'] == 'ok' else self.last_used_mmu)
-        if wait_for_response:
-            return self.mmu_get_status_response
-        else:
-            self.out_cmd_queue.append(self.mmu_get_status_response)
+        return self.mmu_get_status_response
     
     def handle_out_mmu_reset_drivers(self, command: dict[str, str], wait_for_response: bool) -> dict[str, str] | None:
         return self._handle_out_send_all(command, wait_for_response)
@@ -220,17 +255,21 @@ class IJM_Splitter(IJM_Base):
     def handle_out_mmu_clamp_channel(self, command: dict[str, str], wait_for_response: bool) -> dict[str, str] | None:
         target_mmu = self.channel_map[int(command['channel'])]
 
+        self._handle_out_channel_based(command, wait_for_response)
+
         for i in range(len(self.mmu_list)):
             if i != target_mmu:
                 self.idle_command_queue.append((i, True, {'command': 'mmu_release_all_channels'}))
-
-        self._handle_out_channel_based(command, wait_for_response)
 
     def handle_out_mmu_release_channel(self, command: dict[str, str], wait_for_response: bool) -> dict[str, str] | None:
         self._handle_out_channel_based(command, wait_for_response)
     
     def handle_out_mmu_halt_movement(self, command: dict[str, str], wait_for_response: bool) -> dict[str, str] | None:
-        return self._handle_out_send_all(command, wait_for_response)
+        return self._handle_out_send_all(command, wait_for_response, True)
+    
+    def handle_in_mmu_response_get_status(self, command: dict[str, str]):
+        self.adjust_channels(command, self.last_commanded_mmu)
+        self.update_get_status_response(command, self.last_commanded_mmu)
 
 
     
