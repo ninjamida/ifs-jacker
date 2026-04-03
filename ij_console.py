@@ -1,9 +1,6 @@
 import time, sys, uselect
-from ij_core import RUN_CORE_ON_SECOND_THREAD
 from ij_misc import get_traceback_string
-
-if RUN_CORE_ON_SECOND_THREAD:
-    import _thread
+import _thread
 
 _console: IJ_Console | IJ_Dummy_Console = None # type: ignore
 
@@ -21,16 +18,13 @@ class IJ_Dummy_Console:
         self.hide_flags = []
         self.read_only = True
 
-        if RUN_CORE_ON_SECOND_THREAD:
-            self.thread_lock = _thread.allocate_lock()
+        self.thread_lock = _thread.allocate_lock()
 
     def lock(self):
-        if RUN_CORE_ON_SECOND_THREAD:
-            self.thread_lock.acquire()
+        self.thread_lock.acquire()
 
     def release(self):
-        if RUN_CORE_ON_SECOND_THREAD:
-            self.thread_lock.release()
+        self.thread_lock.release()
 
     def write(self, message: str | None, category: str):
         pass
@@ -62,16 +56,13 @@ class IJ_Console:
 
         self.hide_flags = []
 
-        if RUN_CORE_ON_SECOND_THREAD:
-            self.thread_lock = _thread.allocate_lock()
+        self.thread_lock = _thread.allocate_lock()
 
     def lock(self):
-        if RUN_CORE_ON_SECOND_THREAD:
-            self.thread_lock.acquire()
+        self.thread_lock.acquire()
 
     def release(self):
-        if RUN_CORE_ON_SECOND_THREAD:
-            self.thread_lock.release()
+        self.thread_lock.release()
         
     def write(self, message: str | None, category: str):
         if message is not None and category not in self.hide_flags:

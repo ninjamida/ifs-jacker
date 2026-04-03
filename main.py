@@ -25,6 +25,7 @@ def main():
     else:
         while not core.terminate:
             core.update()
+            console().execute()
 
     if core.reboot_flag:
         machine.reset()
