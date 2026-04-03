@@ -1,5 +1,6 @@
 import time, sys, uselect
 from ij_core import RUN_CORE_ON_SECOND_THREAD
+from ij_misc import get_traceback_string
 
 if RUN_CORE_ON_SECOND_THREAD:
     import _thread
@@ -45,8 +46,8 @@ class IJ_Dummy_Console:
 
 class IJ_Console:
     def __init__(self):
-        self.input_buffer = ""
-        self.need_refresh_prompt = True
+        self.input_buffer: str = ""
+        self.prompt_text_length = 0
 
         self.incoming = []
         self.outgoing = []
@@ -83,7 +84,7 @@ class IJ_Console:
     def execute(self):
         try:
             if len(self.incoming) > 0:
-                sys.stdout.write('\r\x1b[K')
+                self.clear_prompt()
                 new_lines = []
                 self.lock()
                 try:
@@ -94,7 +95,6 @@ class IJ_Console:
                 for line in new_lines:
                     line_text = f"{time.ticks_ms():0{self.timestamp_digits}d}  {line}"
                     print(line_text)
-                self.need_refresh_prompt = True
 
             console_input = self.check_input()
             if console_input != None:
@@ -106,15 +106,20 @@ class IJ_Console:
         except KeyboardInterrupt:
             raise
         except Exception as e:
-            print(f"\r{time.ticks_ms():0{self.timestamp_digits}d}  Exception occurred in console: {e}")
+            if self.prompt_text_length > 0:
+                print()
+            print(f"{time.ticks_ms():0{self.timestamp_digits}d}  Exception occurred in console: {e}")
+            for line in get_traceback_string(e):
+                print(f"{time.ticks_ms():0{self.timestamp_digits}d}  -- {line}")
     
     def check_input(self) -> str | None:
         if self.read_only:
             return None
 
-        if self.need_refresh_prompt:
-            sys.stdout.write('\r' + self.input_prefix + '  ' + self.input_buffer)
-            self.need_refresh_prompt = False
+        if self.prompt_text_length == 0:
+            prompt_output = self.input_prefix + '  ' + self.input_buffer
+            sys.stdout.write(prompt_output)
+            self.prompt_text_length = len(prompt_output)
 
         while self.poller.poll(0):
             char = sys.stdin.read(1)
@@ -122,15 +127,21 @@ class IJ_Console:
             if char in ['\r', '\n']:
                 result = self.input_buffer
                 self.input_buffer = ""
-                self.need_refresh_prompt = True
+                self.prompt_text_length = 0
                 print()
                 return result
             elif char in ['\x08', '\x7F']:
                 if len(self.input_buffer) > 0:
                     self.input_buffer = self.input_buffer[:-1]
                     sys.stdout.write('\b \b')
+                    self.prompt_text_length -= 1
             elif ord(char) >= 32 and ord(char) < 127:
                 self.input_buffer += char
+                self.prompt_text_length += 1
                 sys.stdout.write(char)
         
         return None
+    
+    def clear_prompt(self):
+        sys.stdout.write('\b \b' * self.prompt_text_length)
+        self.prompt_text_length = 0
