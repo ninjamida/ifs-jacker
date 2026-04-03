@@ -5,14 +5,42 @@ class IJCI_Base:
     def __init__(self):
         self.friendly_name = 'Base Placeholder'
         self.internal_name = ''
+        self.receive_pending = []
+        self.clear_receive_queue_before_sending = False
 
     def send(self, message: bytes):
+        if self.clear_receive_queue_before_sending:
+            self.clear_receive_queue()
+        self.do_send(message)
+
+    def clear_receive_queue(self):
+        if self.do_check_receive():
+            while True:
+                new_data = self.do_receive()
+                if new_data == None:
+                    break
+                else:
+                    self.receive_pending.append(new_data)
+
+    def do_send(self, message: bytes):
         pass
 
     def check_receive(self) -> bool:
+        if len(self.receive_pending) > 0:
+            return True
+        else:
+            return self.do_check_receive()
+        
+    def do_check_receive(self) -> bool:
         return False
     
     def receive(self) -> bytes:
+        if len(self.receive_pending) > 0:
+            return self.receive_pending.pop(0)
+        else:
+            return self.do_receive()
+    
+    def do_receive(self) -> bytes:
         return bytes()
     
     def update(self):
@@ -44,14 +72,14 @@ class IJCI_UART(IJCI_Base):
         self.receive_continue_timeout = int(0.05 * 1000)
         self.friendly_name = 'UART'
         
-    def send(self, message: bytes):
+    def do_send(self, message: bytes):
         self.uart.write(message)
         self.uart.flush()
 
-    def check_receive(self) -> bool:
+    def do_check_receive(self) -> bool:
         return self.uart.any() > 0
     
-    def receive(self) -> bytes:
+    def do_receive(self) -> bytes:
         deadline = time.ticks_add(time.ticks_ms(), self.receive_start_timeout)
         result = bytes()
         while time.ticks_diff(deadline, time.ticks_ms()) > 0:
@@ -90,10 +118,11 @@ class IJCI_UART_EN(IJCI_UART):
         self.en_pin = Pin(en_pin, Pin.OUT, value=not write_en_state)
         self.write_en_state = write_en_state
         self.friendly_name = 'UART With EN Pin'
+        self.clear_receive_queue_before_sending = True
 
-    def send(self, message: bytes):
+    def do_send(self, message: bytes):
         self.en_pin.value(self.write_en_state)
-        super().send(message)
+        super().do_send(message)
         self.en_pin.value(not self.write_en_state)
 
     @staticmethod
@@ -125,6 +154,7 @@ class IJCI_UART_EN_Multi_Splitter(IJCI_UART):
         self.write_en_state = write_en_state
         self.en_pins: list[Pin] = []
         self.friendly_name = 'UART With EN PIN Splitter'
+        self.clear_receive_queue_before_sending = True
 
         for pin_id in en_dummy_pins:
             initial_state = write_en_state if (len(self.en_pins) == 0) else not write_en_state
@@ -186,16 +216,18 @@ class IJCI_UART_EN_Multi(IJCI_Base):
         self.friendly_name = 'UART With EN Pin Split Client'
         self.internal_name = parent.internal_name + f'_en{en_pin}'
 
-    def send(self, message: bytes):
+    def do_send(self, message: bytes):
+        if self.parent.clear_receive_queue_before_sending:
+            self.parent.clear_receive_queue()
         self.parent.set_write_device(self.en_pin)
         self.parent.send(message)
         if self.auto_set_read_device_after_send:
             self.parent.set_read_device(self.en_pin)
 
-    def check_receive(self) -> bool:
+    def do_check_receive(self) -> bool:
         return self.parent.check_receive()
     
-    def receive(self) -> bytes:
+    def do_receive(self) -> bytes:
         return self.parent.receive()
     
     def set_as_write_device(self):

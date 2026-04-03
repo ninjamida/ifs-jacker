@@ -13,16 +13,16 @@ class IJCI_Console(IJCI_Base):
         self.polling.register(sys.stdin, uselect.POLLIN)
         self.friendly_name = 'Console'
 
-    def send(self, message: bytes):
+    def do_send(self, message: bytes):
         try:
             print(str(message, 'utf-8'))
         except:
             print(message.hex(' '))
 
-    def check_receive(self) -> bool:
+    def do_check_receive(self) -> bool:
         return len(self.queue) > 0
     
-    def receive(self) -> bytes:
+    def do_receive(self) -> bytes:
         if len(self.queue) == 0:
             return bytes()
         else:

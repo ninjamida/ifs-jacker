@@ -21,7 +21,7 @@ class IJCI_Debug(IJCI_Base):
         self.friendly_name = f'Debug Comm {id}'
         self.responder = responder
 
-    def send(self, message: bytes):
+    def do_send(self, message: bytes):
         try:
             message_str = str(message, 'utf-8')
         except:
@@ -33,10 +33,10 @@ class IJCI_Debug(IJCI_Base):
             for new_line in self.receive_queue[old_queue_len:]:
                 console().write(f'{self.identifier} ---> {new_line}', 'comm')
 
-    def check_receive(self) -> bool:
+    def do_check_receive(self) -> bool:
         return len(self.receive_queue) > 0
     
-    def receive(self) -> bytes:
+    def do_receive(self) -> bytes:
         if len(self.receive_queue) == 0:
             return bytes()
         else:
