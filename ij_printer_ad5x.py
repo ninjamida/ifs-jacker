@@ -7,10 +7,12 @@ class IJP_AD5X(IJP_Text_Based):
         self.friendly_name = 'Flashforge AD5X'
         self.await_release = False
         self.queued_data = []
+        self.hold_commands_until_0xff = False
+        self.error_handling = 'ignore'
 
     def translate_command(self, message: bytes) -> dict[str, str] | None:
         result = super().translate_command(message)
-        if result:
+        if result and self.hold_commands_until_0xff:
             self.await_release = True
         return result
     

@@ -43,7 +43,7 @@ class IJ_Core:
         except KeyboardInterrupt:
             raise
         except Exception as e:
-            console().write(f"Exception occurred in core: {e}", 'error')
+            console().write(f"Core exception: {e}", 'error')
             if self.full_error_details:
                 for line in get_traceback_string(e):
                     console().write(line, 'error')
@@ -138,7 +138,7 @@ class IJ_Core:
         fs_size = fs_stats[2] * fs_stats[0]
         response['memory_storage'] = f'{fs_size - (fs_stats[3] * fs_stats[0])}/{fs_size}'
 
-        response['console'] = 'Enabled' if console() is IJ_Console else 'Disabled'
+        response['console'] = 'Enabled' if isinstance(console(), IJ_Console) else 'Disabled'
 
         self.next_command = response
         self.next_command_origin = f'response-{origin}'

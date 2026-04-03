@@ -77,6 +77,7 @@ class IJM_Text_Based(IJM_Base):
         super().__init__(connection)
         self.seperator = seperator
         self.friendly_name = "Base Placeholder Text Based"
+        self.error_handling = 'strict'
 
     def get_plugin_status(self, response: dict[str, str]):
         super().get_plugin_status(response)
@@ -84,7 +85,7 @@ class IJM_Text_Based(IJM_Base):
     
     def translate_response(self, message: bytes) -> dict[str, str] | None:
         try:
-            text_response = str(message, 'utf-8')
+            text_response = str(message, 'utf-8', self.error_handling)
         except:
             return None
 
@@ -119,7 +120,9 @@ class IJM_Text_Based(IJM_Base):
     @staticmethod
     def make_from_config(config_data: dict[str, str], connection: IJCI_Base, key_prefix: str = '', load_mmu_func = None) -> IJM_Text_Based: # Not that this one is ever useful...
         seperator = config_data.get(key_prefix + 'seperator', None)
-        return IJM_Text_Based(connection, seperator)
+        result = IJM_Text_Based(connection, seperator)
+        result.error_handling = config_data.get(key_prefix + 'error_handling', result.error_handling)
+        return result
     
 class IJM_Text_Based_Direct(IJM_Base):
     # Directly takes IFS Jacker internal commands, and relays IFS Jacker internal responses.
@@ -130,9 +133,10 @@ class IJM_Text_Based_Direct(IJM_Base):
         super().__init__(connection)
         self.friendly_name = 'Direct IJ Command'
         self.cached_channel_count: int | None = None
+        self.error_handling = 'strict'
 
     def translate_command(self, message: bytes) -> dict[str, str] | None:
-        return command_str_to_dict(str(message, 'utf-8'))
+        return command_str_to_dict(str(message, 'utf-8', self.error_handling))
     
     def translate_response(self, response: dict[str, str]) -> bytes | None:
         result = command_dict_to_str(response)
@@ -156,4 +160,5 @@ class IJM_Text_Based_Direct(IJM_Base):
         channel_count_raw = config_data.get(key_prefix + 'channels', None)
         if channel_count_raw:
             result.cached_channel_count = int(channel_count_raw)
+        result.error_handling = config_data.get(key_prefix + 'error_handling', result.error_handling)
         return result

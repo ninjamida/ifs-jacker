@@ -55,6 +55,7 @@ class IJ_Config_Loader:
         comms().comm_interfaces = self.comm_interfaces
 
         self.load_misc_settings(file_data.get('Misc', {}), core)
+        comms().full_error_details = core.full_error_details
 
     def load_misc_settings(self, misc_sec: dict[str, str], core: IJ_Core):
         core.full_error_details = misc_sec.get('full_error_details') == 'True'

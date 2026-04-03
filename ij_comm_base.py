@@ -90,6 +90,7 @@ class IJCI_UART(IJCI_Base):
 
     def uart_send(self, send_data: bytes):
         self.uart.write(send_data)
+        self.uart.flush()
 
     def handle_rx(self):
         has_new_data = False

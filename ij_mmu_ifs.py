@@ -5,6 +5,7 @@ class IJM_IFS(IJM_Text_Based):
     def __init__(self, connection: IJCI_Base):
         super().__init__(connection)
         self.friendly_name = "Flashforge IFS"
+        self.error_handling = 'ignore'
 
     def get_channel_count(self) -> int:
         return 4
