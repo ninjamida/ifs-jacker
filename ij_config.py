@@ -3,6 +3,7 @@ from ij_console import IJ_Console, IJ_Dummy_Console, set_console
 from ij_comm_base import IJCI_Base, IJCI_Null
 from ij_printer_base import IJP_Base, IJP_Null
 from ij_mmu_base import IJM_Base, IJM_Null
+from ij_comms import comms
 import os
 
 class IJ_Config_Loader:
@@ -51,7 +52,7 @@ class IJ_Config_Loader:
         set_console(self.load_console_settings(file_data.get('Console', {})))
         core.printer = self.load_printer(file_data.get('Printer', {}))
         core.mmu = self.load_mmu(file_data.get('MMU', {}))
-        core.comm_interfaces = self.comm_interfaces
+        comms().comm_interfaces = self.comm_interfaces
 
         self.load_misc_settings(file_data.get('Misc', {}), core)
 

@@ -21,7 +21,24 @@ class IJCI_Debug(IJCI_Base):
         self.friendly_name = f'Debug Comm {id}'
         self.responder = responder
 
-    def send(self, message: bytes):
+    def update(self):
+        if len(self.send_buffer) > 0:
+            self.send_lock.acquire()
+            try:
+                while len(self.send_buffer) > 0:
+                    self.handle_send(self.send_buffer.pop(0))
+            finally:
+                self.send_lock.release()
+
+        if len(self.receive_queue) > 0:
+            self.receive_lock.acquire()
+            try:
+                while len(self.receive_queue) > 0:
+                    self.receive_buffer.append(self.receive_queue.pop(0).encode('utf-8'))
+            finally:
+                self.receive_lock.release()
+
+    def handle_send(self, message: bytes):
         try:
             message_str = str(message, 'utf-8')
         except:
@@ -32,15 +49,6 @@ class IJCI_Debug(IJCI_Base):
             self.responder.respond(message_str, self.receive_queue)
             for new_line in self.receive_queue[old_queue_len:]:
                 console().write(f'{self.identifier} ---> {new_line}', 'comm')
-
-    def check_receive(self) -> bool:
-        return len(self.receive_queue) > 0
-    
-    def receive(self) -> bytes:
-        if len(self.receive_queue) == 0:
-            return bytes()
-        else:
-            return self.receive_queue.pop(0).encode('utf-8')
         
     @staticmethod
     def make_from_config(config_data: dict[str, str]) -> IJCI_Debug:
