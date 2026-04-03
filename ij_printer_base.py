@@ -1,6 +1,7 @@
 from ij_comm_base import IJCI_Base, IJCI_Null
 from ij_command_conversion import command_dict_to_str, command_str_to_dict
 from ij_console import console
+from ij_misc import decode_valid_bytes
 import time
 
 class IJP_Base:
@@ -75,7 +76,7 @@ class IJP_Text_Based(IJP_Base):
         super().__init__(connection)
         self.seperator = seperator
         self.friendly_name = "Base Placeholder Text Based"
-        self.error_handling = 'strict'
+        self.ignore_invalid_characters = False
 
     def get_plugin_status(self, response: dict[str, str]):
         super().get_plugin_status(response)
@@ -83,7 +84,10 @@ class IJP_Text_Based(IJP_Base):
 
     def translate_command(self, message: bytes) -> dict[str, str] | None:
         try:
-            text_cmd = str(message, 'utf-8', self.error_handling)
+            if self.ignore_invalid_characters:
+                text_cmd = decode_valid_bytes(message)
+            else:
+                text_cmd = str(message, 'utf-8')
         except:
             return None
 
@@ -119,7 +123,7 @@ class IJP_Text_Based(IJP_Base):
     def make_from_config(config_data: dict[str, str], connection: IJCI_Base) -> IJP_Text_Based: # Not that this one is ever useful...
         seperator = config_data.get('seperator', None)
         result = IJP_Text_Based(connection, seperator)
-        result.error_handling = config_data.get('error_handling', result.error_handling)
+        result.ignore_invalid_characters = config_data.get('ignore_invalid_characters', result.ignore_invalid_characters)
         return result
         
 class IJP_Text_Based_Direct(IJP_Base):
@@ -130,10 +134,14 @@ class IJP_Text_Based_Direct(IJP_Base):
     def __init__(self, connection: IJCI_Base):
         super().__init__(connection)
         self.friendly_name = 'Direct IJ Command'
-        self.error_handling = 'strict'
+        self.ignore_invalid_characters = False
 
     def translate_command(self, message: bytes) -> dict[str, str] | None:
-        return command_str_to_dict(str(message, 'utf-8', self.error_handling))
+        if self.ignore_invalid_characters:
+            message_decoded = decode_valid_bytes(message)
+        else:
+            message_decoded = str(message, 'utf-8')
+        return command_str_to_dict(message_decoded)
     
     def translate_response(self, response: dict[str, str]) -> bytes | None:
         result = command_dict_to_str(response)
@@ -145,5 +153,5 @@ class IJP_Text_Based_Direct(IJP_Base):
     @staticmethod
     def make_from_config(config_data: dict[str, str], connection: IJCI_Base) -> IJP_Text_Based_Direct:
         result = IJP_Text_Based_Direct(connection)
-        result.error_handling = config_data.get('error_handling', result.error_handling)
+        result.ignore_invalid_characters = config_data.get('ignore_invalid_characters', result.ignore_invalid_characters)
         return result

@@ -8,7 +8,7 @@ class IJP_AD5X(IJP_Text_Based):
         self.await_release = False
         self.queued_data = []
         self.hold_commands_until_0xff = False
-        self.error_handling = 'ignore'
+        self.ignore_invalid_characters = True
 
     def translate_command(self, message: bytes) -> dict[str, str] | None:
         result = super().translate_command(message)

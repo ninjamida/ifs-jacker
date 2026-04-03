@@ -1,6 +1,7 @@
 from ij_comm_base import IJCI_Base, IJCI_Null
 from ij_command_conversion import command_dict_to_str, command_str_to_dict
 from ij_console import console
+from ij_misc import decode_valid_bytes
 import time
 
 class IJM_Base:
@@ -77,7 +78,7 @@ class IJM_Text_Based(IJM_Base):
         super().__init__(connection)
         self.seperator = seperator
         self.friendly_name = "Base Placeholder Text Based"
-        self.error_handling = 'strict'
+        self.ignore_invalid_characters = False
 
     def get_plugin_status(self, response: dict[str, str]):
         super().get_plugin_status(response)
@@ -85,7 +86,10 @@ class IJM_Text_Based(IJM_Base):
     
     def translate_response(self, message: bytes) -> dict[str, str] | None:
         try:
-            text_response = str(message, 'utf-8', self.error_handling)
+            if self.ignore_invalid_characters:
+                text_response = decode_valid_bytes(message)
+            else:
+                text_response = str(message, 'utf-8')
         except:
             return None
 
@@ -121,7 +125,7 @@ class IJM_Text_Based(IJM_Base):
     def make_from_config(config_data: dict[str, str], connection: IJCI_Base, key_prefix: str = '', load_mmu_func = None) -> IJM_Text_Based: # Not that this one is ever useful...
         seperator = config_data.get(key_prefix + 'seperator', None)
         result = IJM_Text_Based(connection, seperator)
-        result.error_handling = config_data.get(key_prefix + 'error_handling', result.error_handling)
+        result.ignore_invalid_characters = config_data.get(key_prefix + 'ignore_invalid_characters', result.ignore_invalid_characters)
         return result
     
 class IJM_Text_Based_Direct(IJM_Base):
@@ -133,10 +137,14 @@ class IJM_Text_Based_Direct(IJM_Base):
         super().__init__(connection)
         self.friendly_name = 'Direct IJ Command'
         self.cached_channel_count: int | None = None
-        self.error_handling = 'strict'
+        self.ignore_invalid_characters = False
 
     def translate_command(self, message: bytes) -> dict[str, str] | None:
-        return command_str_to_dict(str(message, 'utf-8', self.error_handling))
+        if self.ignore_invalid_characters:
+            message_decoded = decode_valid_bytes(message)
+        else:
+            message_decoded = str(message, 'utf-8')
+        return command_str_to_dict(message_decoded)
     
     def translate_response(self, response: dict[str, str]) -> bytes | None:
         result = command_dict_to_str(response)
@@ -160,5 +168,5 @@ class IJM_Text_Based_Direct(IJM_Base):
         channel_count_raw = config_data.get(key_prefix + 'channels', None)
         if channel_count_raw:
             result.cached_channel_count = int(channel_count_raw)
-        result.error_handling = config_data.get(key_prefix + 'error_handling', result.error_handling)
+        result.ignore_invalid_characters = config_data.get(key_prefix + 'ignore_invalid_characters', result.ignore_invalid_characters)
         return result
