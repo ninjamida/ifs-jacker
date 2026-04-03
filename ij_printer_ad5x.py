@@ -16,7 +16,7 @@ class IJP_AD5X(IJP_Text_Based):
     
     def translate_response(self, response: dict[str, str]) -> bytes | None:
         result = super().translate_response(response)
-        if self.await_release:
+        if self.await_release and result is not None:
             self.queued_data.append(result)
             return bytes()
         else:

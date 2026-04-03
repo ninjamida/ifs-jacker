@@ -41,7 +41,7 @@ class IJCI_UART(IJCI_Base):
             tx=tx_pin, rx=rx_pin
             )
         self.receive_start_timeout = int(0.2 * 1000)
-        self.receive_continue_timeout = int(0.05 * 1000)
+        self.receive_continue_timeout = int(0.02 * 1000)
         self.friendly_name = 'UART'
         
     def send(self, message: bytes):
