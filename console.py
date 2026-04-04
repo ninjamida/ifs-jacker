@@ -12,6 +12,7 @@ class IJ_Console:
 
         self.exclude_categories: list[str] = []
         self.include_categories: list[str] = []
+        self.input_buffer = ''
 
     def check_category(self, category: str) -> bool:
         if category == '':

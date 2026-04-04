@@ -63,6 +63,10 @@ class IJ_Core:
                 if z == 1:
                     self.send_printer('Z1 ok.')
 
+                if z == 99:
+                    self.terminate = True
+                    self.send_printer('Z99 ok. Terminating')
+
             if z == 0 and f > 0:    
                 if c > 0:
                     mmu = (c - 1) // 4
@@ -89,6 +93,7 @@ class IJ_Core:
                     elements.append(f'C{c}')
                     if s > 0 and l > 0:
                         elements.append(f'L{l} S{s}')
+                elements.append('\r\n')
                 self.send_mmu(' '.join(elements), mmu)
 
     def send_mmu(self, data: str, mmu: int):

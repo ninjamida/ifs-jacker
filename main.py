@@ -6,6 +6,7 @@ from core import IJ_Core
 from comm import IJ_Comm_Manager
 from console import get_console
 from config import load_config
+import time
 
 def main():
     console = get_console()
@@ -36,13 +37,13 @@ def main():
     console.print('Core terminated', 'info')
     console.flush()
     
-    if comm.started:
+    if comm.started and not comm.finished:
+        console.print('Waiting for comm manager to exit', 'info')
+        time.sleep_ms(300) # In case shutdown was from a Z99 command, so that the response has time to send
         comm.terminate = True
-        if not comm.finished:
-            console.print('Waiting for comm manager to exit', 'info')
-            console.flush()
-            while not comm.finished:
-                pass
+        console.flush()
+        while not comm.finished:
+            pass
 
     console.print('IFS Jacker terminated', '')
     console.flush()
