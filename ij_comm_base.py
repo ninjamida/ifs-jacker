@@ -62,7 +62,7 @@ class IJCI_UART(IJCI_Base):
             uart_channel, baudrate=baud, bits=bits, parity=parity, stop=stop_bits,
             tx=tx_pin, rx=rx_pin
             )
-        self.receive_continue_timeout = int(0.02 * 1000)
+        self.receive_continue_timeout = int(0.005 * 1000)
         self.friendly_name = 'UART'
 
         self.current_buffer_deadline = time.ticks_ms()
@@ -146,6 +146,7 @@ class IJCI_UART_EN(IJCI_UART):
         self.en_pin = Pin(en_pin, Pin.OUT, value=not write_en_state)
         self.write_en_state = write_en_state
         self.friendly_name = 'UART With EN Pin'
+        self.suspend_send_while_receiving = True
 
     def uart_send(self, send_data: bytes):
         self.en_pin.value(self.write_en_state)
@@ -190,6 +191,7 @@ class IJCI_UART_EN_Multi_Splitter(IJCI_UART):
         self.friendly_name = 'UART With EN PIN Splitter'
         self.send_buffer_en = []
         self.current_en_pin = None
+        self.suspend_send_while_receiving = True
 
         for pin_id in en_dummy_pins:
             initial_state = write_en_state if (len(self.en_pins) == 0) else not write_en_state
