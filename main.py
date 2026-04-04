@@ -1,31 +1,50 @@
-import machine, gc, time
-from ij_core import IJ_Core
-from ij_config import IJ_Config_Loader
-from ij_console import console
-from ij_comms import comms
+SCRIPT_IDENTIFIER = 'IFS Jacker'
+SCRIPT_AUTHOR = 'Namida Verasche (Trumble)'
+SCRIPT_VERSION = '1.0.0'
+
+from core import IJ_Core
+from comm import IJ_Comm_Manager
+from console import get_console
+from config import load_config
 
 def main():
-    start_time = time.ticks_ms()
+    console = get_console()
 
-    core = IJ_Core()
-    IJ_Config_Loader().load_config(core)
-    gc.collect()
+    console.print(f'{SCRIPT_IDENTIFIER} version {SCRIPT_VERSION}', '')
+    console.print(f'Author: {SCRIPT_AUTHOR}', '')
+    console.print('', '')
 
-    console().incoming += ['IFS Jacker loaded']
-    console().outgoing += ['ij_get_status']
-    console().outgoing += [f'ij_echo load_time={time.ticks_diff(time.ticks_ms(), start_time)}ms']
+    try:
+        core = IJ_Core()
+        comm = IJ_Comm_Manager()
+        core.comm = comm
+        comm.core = core
 
-    comms().run()
+        load_config(core, comm)
 
-    while not core.terminate:
-        core.update()
-        console().execute()
+        console.print('Starting comm manager on second thread', 'info')
+        console.flush()
+        comm.start_thread()
 
-    comms().terminate = True
-    while not comms().finished:
-        pass
+        console.print('Starting core on primary thread', 'info')
+        console.flush()
+        core.run()
+    except Exception as e:
+        console.print_exception(e, 'startup')
+        console.flush()
 
-    if core.reboot_flag:
-        machine.reset()
+    console.print('Core terminated', 'info')
+    console.flush()
+    
+    if comm.started:
+        comm.terminate = True
+        if not comm.finished:
+            console.print('Waiting for comm manager to exit', 'info')
+            console.flush()
+            while not comm.finished:
+                pass
+
+    console.print('IFS Jacker terminated', '')
+    console.flush()
 
 main()
