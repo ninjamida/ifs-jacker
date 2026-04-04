@@ -9,6 +9,7 @@ class IJP_AD5X(IJP_Text_Based):
         self.queued_data = []
         self.hold_commands_until_0xff = False
         self.ignore_invalid_characters = True
+        self.send_channel_count = False
 
     def translate_command(self, message: bytes) -> dict[str, str] | None:
         result = super().translate_command(message)
@@ -61,7 +62,9 @@ class IJP_AD5X(IJP_Text_Based):
     
     @staticmethod
     def make_from_config(config_data: dict[str, str], connection: IJCI_Base) -> IJP_AD5X:
-        return IJP_AD5X(connection)
+        result = IJP_AD5X(connection)
+        result.send_channel_count = config_data.get('send_channel_count', 'False') == 'True'
+        return result
 
     def translate_in_F10(self, elements: list[str]) -> dict[str, str]:
         return self._translate_in_channel_length_speed(elements, 'mmu_insert_filament')
@@ -166,9 +169,15 @@ class IJP_AD5X(IJP_Text_Based):
             finally:
                 i += 1
 
-        return f'F13 ok. FFS_state: {result_state} silk_state: {result_silk} chan: {result_chan} ' + \
-            f'ffs_channels_insert: {result_channels_insert} stall_state: {result_stall_state} ' + \
-            'jinsi_GCONF: 000001dc qiehuan_GCONF: 000001dc'
+
+        result = f'F13 ok. FFS_state: {result_state} silk_state: {result_silk} chan: {result_chan}'
+        result += f' ffs_channels_insert: {result_channels_insert} stall_state: {result_stall_state}'
+        
+        if self.send_channel_count:
+            result += f' channel_count: {elements.get('channel_count', 1)}'
+
+        result += ' jinsi_GCONF: 000001dc qiehuan_GCONF: 000001dc'
+        return result
 
     def translate_out_mmu_response_reset_drivers(self, elements: dict[str, str]) -> str:
         return 'F15 ok.'

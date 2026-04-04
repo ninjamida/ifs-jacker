@@ -241,6 +241,7 @@ class IJM_Splitter(IJM_Base):
         return self._handle_out_channel_based(command, wait_for_response)
     
     def handle_out_mmu_get_status(self, command: dict[str, str], wait_for_response: bool) -> dict[str, str] | None:
+        self.mmu_get_status_response['channel_count'] = str(len(self.channel_map))
         return self.mmu_get_status_response
     
     def handle_out_mmu_reset_drivers(self, command: dict[str, str], wait_for_response: bool) -> dict[str, str] | None:

@@ -78,6 +78,8 @@ class IJM_IFS(IJM_Text_Based):
                 channel_state = 'withdrawing'
             result[channel_prefix + 'state'] = channel_state
 
+        result['channel_count'] = str(self.get_channel_count())
+
         return result
 
     def translate_in_F15(self, elements: list[str]) -> dict[str, str]:
