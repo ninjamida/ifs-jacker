@@ -68,7 +68,7 @@ class IJ_Console:
         if message is not None and category not in self.hide_flags:
             self.lock()
             try:
-                self.incoming.append(message)
+                self.incoming.append(f'{time.ticks_ms():0{self.timestamp_digits}d}  {message}')
             finally:
                 self.release()
     
@@ -84,8 +84,7 @@ class IJ_Console:
                 finally:
                     self.release()
                 for line in new_lines:
-                    line_text = f"{time.ticks_ms():0{self.timestamp_digits}d}  {line}"
-                    print(line_text)
+                    print(line)
 
             console_input = self.check_input()
             if console_input != None:
