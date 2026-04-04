@@ -1,6 +1,6 @@
 SCRIPT_IDENTIFIER = 'IFS Jacker'
 SCRIPT_AUTHOR = 'Namida Verasche (Trumble)'
-SCRIPT_VERSION = '1.0.0'
+SCRIPT_VERSION = '2.0.0'
 
 from core import IJ_Core
 from comm import IJ_Comm_Manager

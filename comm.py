@@ -72,7 +72,7 @@ class _IJ_Comm_Abstract:
     
     def receive(self) -> str:
         if len(self._receive_queue) > 0:
-            if self._receive_lock.acquire(waitflag=0):
+            if self._receive_lock.acquire(0):
                 result = self._receive_queue.pop(0)
                 self._receive_lock.release()
                 return result
@@ -93,12 +93,7 @@ class _IJ_Comm_Abstract:
         
         if len(self._send_queue) > 0 and diff < 0:
             if not self.send_block_while_incoming or (len(self._receive_buffer) == 0 and not self._comm_check_receive()):
-                if self._send_lock.acquire(waitflag=0):
-                    send_data = self._send_queue.pop(0)
-                    self._send_lock.release()
-                    self._comm_send(send_data.encode('utf-8'))
-                    if self.send_block_after_send_time > 0:
-                        self.block_send()
+                self._send_next_queued_command()
 
         if self._comm_check_receive():
             new_data = self._comm_receive()
@@ -113,6 +108,14 @@ class _IJ_Comm_Abstract:
             self._receive_lock.release()       
             if self.unblock_send_on_receive:
                 self._send_unblock_time = time.ticks_ms() 
+
+    def _send_next_queued_command(self):
+        if self._send_lock.acquire(0):
+            send_data = self._send_queue.pop(0)
+            self._send_lock.release()
+            self._comm_send(send_data.encode('utf-8'))
+            if self.send_block_after_send_time > 0:
+                self.block_send()
 
     def _comm_send(self, data: bytes):
         pass
@@ -178,16 +181,16 @@ class IJ_Comm_UART_EN(_IJ_Comm_Abstract):
         self.send_block_after_send_time = DEFAULT_BLOCK_SEND_DURATION
         self.send_block_while_incoming = True
         
-    def send(self, data: bytes):
+    def _comm_send(self, data: bytes):
         self.en_pin.value(self.en_write_state)
         self.uart.write(data)
         self.uart.flush()
         self.en_pin.value(not self.en_write_state)
 
-    def check_receive(self) -> bool:
+    def _comm_check_receive(self) -> bool:
         return self.uart.any() > 0
     
-    def receive(self) -> bytes:
+    def _comm_receive(self) -> bytes:
         result = self.uart.read()
         if result:
             return result
@@ -241,7 +244,16 @@ class IJ_Comm_UART_EN_Multi(_IJ_Comm_Abstract): # Don't use directly. Use IJ_Com
         self._send_lock.acquire()
         self._send_queue.append(data)
         self._queue_en_pins.append(en_pin)
-        self._send_lock.release()        
+        self._send_lock.release()       
+
+    def _send_next_queued_command(self):
+        if self._send_lock.acquire(0):
+            send_data = self._send_queue.pop(0)
+            en_pin = self._queue_en_pins.pop(0)
+            self._send_lock.release()
+            self._comm_send(send_data.encode('utf-8'), en_pin)
+            if self.send_block_after_send_time > 0:
+                self.block_send() 
         
     def _comm_send(self, data: bytes, en_pin: Pin):
         self.set_en_write_device(en_pin)
