@@ -13,6 +13,18 @@ def load_config(core: IJ_Core, comm_mgr: comm.IJ_Comm_Manager):
     try:
         core_data = ini_data.get('core', {})
         core.include_channel_count_in_status = core_data.get('include_channel_count_in_status', 'false') == 'true'
+        force_present_channels = [item.strip() for item in core_data.get('force_present_channels', '').split(',')]
+        force_absent_channels = [item.strip() for item in core_data.get('force_absent_channels', '').split(',')]
+        if len(force_absent_channels) > 1 or force_absent_channels[0] != '':
+            mask = 0
+            for i in [int(channel) for channel in force_absent_channels]:
+                mask |= 1 << i-1
+            core.force_absent_mask = ~mask
+        if len(force_present_channels) > 1 or force_present_channels[0] != '':
+            mask = 0
+            for i in [int(channel) for channel in force_present_channels]:
+                mask |= 1 << i-1
+            core.force_present_mask = mask & core.force_absent_mask
 
         console_data = ini_data.get('console', {})
         console.exclude_categories = [item.strip() for item in console_data.get('exclude_categories', '').split(',')]

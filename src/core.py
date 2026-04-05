@@ -26,6 +26,9 @@ class IJ_Core:
         self.home_mmu_id = 0
         self.last_send_mmu_id = 0
 
+        self.force_present_mask = 0
+        self.force_absent_mask = ~0
+
         self.include_channel_count_in_status = True
 
     def start_thread(self):
@@ -150,6 +153,9 @@ class IJ_Core:
                         self.ffs_state = new_ffs_state + (self.last_send_mmu_id * 44) # 11 per channel
                     else:
                         self.ffs_state = new_ffs_state
+
+                self.silk_state &= self.force_absent_mask
+                self.silk_state |= self.force_present_mask
 
                 out_text = [f'F13 ok. FFS_state: {self.ffs_state} silk_state: {self.silk_state} chan: {self.chan}']
                 out_text += [f'ffs_channels_insert: {self.channels_insert} stall_state: {self.stall_state}']

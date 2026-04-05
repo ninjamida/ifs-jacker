@@ -7,6 +7,8 @@
 
 [core]      ; Sets core settings (eg. relating to how input / output is processed)
 include_channel_count_in_status=true      ; Default: false. If true, response to F13 commands will add a "channel_count" parameter indicating how many channels the IFS Jacker can provide
+force_present_channels=1,2                ; Default: (none). Any channels listed here will always be reported as having filament in them regardless of what the IFS says. 1-based.
+force_absent_channels=3,4                 ; Default: (none). Channels listed here will always be reported empty. If a channel is listed in both of these, absent has priority.
 
 
 
