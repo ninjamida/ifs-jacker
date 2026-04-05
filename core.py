@@ -91,6 +91,7 @@ class IJ_Core:
                 if f == 18:
                     mmu = self.home_mmu_id
                     self.home_mmu_id = (self.home_mmu_id + 1) % len(self.mmu_comms)
+
                 elements = [f'F{f}']
                 if c > 0:
                     elements.append(f'C{c}')
@@ -135,7 +136,7 @@ class IJ_Core:
                         if key == 'silk_state:': new_silk_state = int(value)
                         if key == 'chan:': new_chan = int(value)
                         if key == 'ffs_channels_insert:': new_channels_insert = int(value)
-                        if key == 'stall_state': new_stall_state = int(value)
+                        if key == 'stall_state:': new_stall_state = int(value)
 
                 shift = self.last_send_mmu_id * 4
                 mask = ~(0b1111 << shift)
@@ -163,9 +164,6 @@ class IJ_Core:
                 if self.last_send_mmu_id != self.active_mmu_id or new_ffs_state == 5:
                     self.status_mmu_id = (self.status_mmu_id + 1) % len(self.mmu_comms)
             else:
-                if cmd_id == 18:
-                    self.home_mmu_id = (self.home_mmu_id + 1) % len(self.mmu_comms)
-
                 mmu_incoming_data = re.sub(
                     r'(channel|chan) (\d+)', 
                     lambda c: f'{c.group(1)} {int(c.group(2)) + (self.last_send_mmu_id * 4)}', 
