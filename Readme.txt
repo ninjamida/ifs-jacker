@@ -18,7 +18,10 @@ You will need zMod in order to use this. Support for this is not yet integrated 
 copy yourself. See here: https://github.com/ghzserg/z_ad5x/pull/8
 
 Code is written for RP2040 Zero (and by extension should be compatible with Raspberry Pi Pico). Compatibility with other boards is not
-guaranteed. It can likely be adapted to any board that supports MicroPython and has two cores with some degree of effort.
+guaranteed. It can likely be adapted to any board that supports MicroPython and has two cores with some degree of effort. One significant
+thing to be aware of is that in comms.py, IJ_Comm_UART_EN_Multi uses direct writes via mem32[] to registers used to control GPIO pins.
+This is done for fast switching of EN pins. The rest of the code will probably work as-is (though I cannot guarantee it) on other boards,
+as long as they are dual-core (or more).
 
 Upload all Python files in "src/", along with config.ini, to an RP2040 Zero with MicroPython installed. See config.ini.txt for info on
 customizing config.ini.
