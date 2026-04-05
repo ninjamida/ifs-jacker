@@ -23,11 +23,14 @@ class IJ_Core:
 
         self.status_mmu_id = 0
         self.active_mmu_id = 0
-        self.home_mmu_id = 0
         self.last_send_mmu_id = 0
 
         self.force_present_mask = 0
         self.force_absent_mask = ~0
+
+        self.queued_F18 = []
+        self.done_queued_F18_skip = False
+        self.hide_next_response = False # if true, will send an F13 response instead
 
         self.include_channel_count_in_status = True
 
@@ -44,7 +47,8 @@ class IJ_Core:
         if not printer_incoming_data:
             if self.printer_comm and self.printer_comm.check_receive():
                 printer_incoming_data = self.printer_comm.receive().strip()
-                self.console.print(f'printer >> {printer_incoming_data}', 'data')
+                if len(printer_incoming_data) > 0:
+                    self.console.print(f'printer >> {printer_incoming_data}', 'data')
             else:
                 printer_incoming_data = ''
 
@@ -79,21 +83,34 @@ class IJ_Core:
                     c = ((c - 1) % 4) + 1
                     self.active_mmu_id = mmu
                     self.status_mmu_id = mmu
-                    self.home_mmu_id = mmu
+                if f == 18 or f == 24:
+                    self.queued_F18 = list(range(len(self.mmu_comms)))
+                    self.queued_F18.remove(mmu)
+                    self.done_queued_F18_skip = False
+                    self.status_mmu_id = mmu
                 if f == 13:
-                    if len(self.mmu_comms) > 0:
+                    if len(self.queued_F18) > 0 and self.done_queued_F18_skip:
+                        mmu = self.queued_F18.pop(0)
+                        f = 18
                         c = 0
                         s = 0
                         l = 0
-                        mmu = self.status_mmu_id
+                        self.hide_next_response = True
+                        self.done_queued_F18_skip = False
                     else:
-                        if self.include_channel_count_in_status:
-                            self.send_printer('F13 ok. FFS_state: 5 silk_state: 0 chan: 0 ffs_channels_insert: 0 stall_state: 0 channel_count: 0 jinsi_GCONF: 00000000 qiehuan_GCONF: 00000000')
+                        if len(self.queued_F18) > 0:
+                            self.done_queued_F18_skip = True
+                        if len(self.mmu_comms) > 0:
+                            c = 0
+                            s = 0
+                            l = 0
+                            mmu = self.status_mmu_id
                         else:
-                            self.send_printer('F13 ok. FFS_state: 5 silk_state: 0 chan: 0 ffs_channels_insert: 0 stall_state: 0 jinsi_GCONF: 00000000 qiehuan_GCONF: 00000000')
-                if f == 18:
-                    mmu = self.home_mmu_id
-                    self.home_mmu_id = (self.home_mmu_id + 1) % len(self.mmu_comms)
+                            # If there are no MMUs, send an immediate response with fake data.
+                            if self.include_channel_count_in_status:
+                                self.send_printer('F13 ok. FFS_state: 5 silk_state: 0 chan: 0 ffs_channels_insert: 0 stall_state: 0 channel_count: 0 jinsi_GCONF: 00000000 qiehuan_GCONF: 00000000')
+                            else:
+                                self.send_printer('F13 ok. FFS_state: 5 silk_state: 0 chan: 0 ffs_channels_insert: 0 stall_state: 0 jinsi_GCONF: 00000000 qiehuan_GCONF: 00000000')
 
                 elements = [f'F{f}']
                 if c > 0:
@@ -122,40 +139,43 @@ class IJ_Core:
         if len(mmu_incoming_data) > 0:
             cmd_id = int(mmu_incoming_data.split(' ', 1)[0][1:])
 
-            if cmd_id == 13:
-                cmd_split = mmu_incoming_data.split(' ')
+            if cmd_id == 13 or self.hide_next_response:
+                if cmd_id == 13:
+                    cmd_split = mmu_incoming_data.split(' ')
 
-                new_ffs_state = 5
-                new_silk_state = 0
-                new_chan = 0
-                new_channels_insert = 0
-                new_stall_state = 0
+                    new_ffs_state = 5
+                    new_silk_state = 0
+                    new_chan = 0
+                    new_channels_insert = 0
+                    new_stall_state = 0
 
-                for i in range(2, len(cmd_split), 2):
-                    if i + 1 < len(cmd_split):
-                        key = cmd_split[i]
-                        value = cmd_split[i + 1]
-                        if key == 'FFS_state:': new_ffs_state = int(value)
-                        if key == 'silk_state:': new_silk_state = int(value)
-                        if key == 'chan:': new_chan = int(value)
-                        if key == 'ffs_channels_insert:': new_channels_insert = int(value)
-                        if key == 'stall_state:': new_stall_state = int(value)
+                    for i in range(2, len(cmd_split), 2):
+                        if i + 1 < len(cmd_split):
+                            key = cmd_split[i]
+                            value = cmd_split[i + 1]
+                            if key == 'FFS_state:': new_ffs_state = int(value)
+                            if key == 'silk_state:': new_silk_state = int(value)
+                            if key == 'chan:': new_chan = int(value)
+                            if key == 'ffs_channels_insert:': new_channels_insert = int(value)
+                            if key == 'stall_state:': new_stall_state = int(value)
 
-                shift = self.last_send_mmu_id * 4
-                mask = ~(0b1111 << shift)
-                self.silk_state = (self.silk_state & mask) | (new_silk_state << shift)
-                self.channels_insert = (self.channels_insert & mask) | (new_channels_insert << shift)
-                self.stall_state = (self.stall_state & mask) | (new_stall_state << shift)
+                    shift = self.last_send_mmu_id * 4
+                    mask = ~(0b1111 << shift)
+                    self.silk_state = (self.silk_state & mask) | (new_silk_state << shift)
+                    self.channels_insert = (self.channels_insert & mask) | (new_channels_insert << shift)
+                    self.stall_state = (self.stall_state & mask) | (new_stall_state << shift)
 
-                if self.last_send_mmu_id == self.active_mmu_id:
-                    self.chan = new_chan + self.last_send_mmu_id * 4
-                    if new_ffs_state in [7, 11, 12, 15, 18, 22, 23, 26, 29, 33, 34, 37, 40, 44, 45, 48]:
-                        self.ffs_state = new_ffs_state + (self.last_send_mmu_id * 44) # 11 per channel
-                    else:
-                        self.ffs_state = new_ffs_state
+                    if self.last_send_mmu_id == self.active_mmu_id:
+                        self.chan = new_chan + self.last_send_mmu_id * 4
+                        if new_ffs_state in [7, 11, 12, 15, 18, 22, 23, 26, 29, 33, 34, 37, 40, 44, 45, 48]:
+                            self.ffs_state = new_ffs_state + (self.last_send_mmu_id * 44) # 11 per channel
+                        else:
+                            self.ffs_state = new_ffs_state
 
-                self.silk_state &= self.force_absent_mask
-                self.silk_state |= self.force_present_mask
+                    self.silk_state &= self.force_absent_mask
+                    self.silk_state |= self.force_present_mask
+
+                self.hide_next_response = False
 
                 out_text = [f'F13 ok. FFS_state: {self.ffs_state} silk_state: {self.silk_state} chan: {self.chan}']
                 out_text += [f'ffs_channels_insert: {self.channels_insert} stall_state: {self.stall_state}']
@@ -167,7 +187,7 @@ class IJ_Core:
 
                 self.send_printer(' '.join(out_text))
 
-                if self.last_send_mmu_id != self.active_mmu_id or new_ffs_state == 5:
+                if self.last_send_mmu_id != self.active_mmu_id or self.ffs_state == 5:
                     self.status_mmu_id = (self.status_mmu_id + 1) % len(self.mmu_comms)
             else:
                 mmu_incoming_data = re.sub(
