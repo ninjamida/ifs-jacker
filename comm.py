@@ -1,8 +1,7 @@
 from machine import UART, Pin
 from util import decode_valid_bytes
 from console import get_console
-import time
-import _thread
+import time, machine, _thread
 
 DEFAULT_BLOCK_SEND_DURATION = int(0.2 * 1000)
 DEFAULT_INTER_CHAR_TIMEOUT = int(0.005 * 1000) # Will always allow one more iteration after last data was received regardless of timeout
@@ -12,6 +11,11 @@ DEFAULT_UART_BAUD = 115200
 DEFAULT_UART_BITS = 8
 DEFAULT_UART_PARITY = None
 DEFAULT_UART_STOP_BITS = 1
+
+# SIO Base and GPIO offsets
+SIO_BASE = 0xd0000000
+GPIO_OUT_SET = SIO_BASE + 0x14
+GPIO_OUT_CLR = SIO_BASE + 0x18
 
 class IJ_Comm_Manager:
     def __init__(self):
@@ -109,6 +113,9 @@ class _IJ_Comm_Abstract:
             self._receive_lock.release()       
             if self.unblock_send_on_receive:
                 self._send_unblock_time = time.ticks_ms() 
+
+    def initialize(self):
+        pass
 
     def _send_next_queued_command(self):
         if self._send_lock.acquire(0):
@@ -226,13 +233,27 @@ class IJ_Comm_UART_EN_Multi(_IJ_Comm_Abstract): # Don't use directly. Use IJ_Com
             uart_instance, baudrate=baud, bits=bits, parity=parity, stop=stop_bits,
             tx=tx_pin, rx=rx_pin
             )
-        self.en_write_state = en_write_state
         self.en_pins = []
+        self.en_pin_ids = []
         self.send_block_after_send_time = DEFAULT_BLOCK_SEND_DURATION
         self.send_block_while_incoming = True
 
         self._queue_en_pins = []
         self._last_used_en_pin = None
+
+        self.en_enable_register = GPIO_OUT_SET if en_write_state else GPIO_OUT_CLR
+        self.en_disable_register = GPIO_OUT_CLR if en_write_state else GPIO_OUT_SET
+        self.all_pins_mask = 0
+
+    def initialize(self):
+        self.all_pins_mask = 0
+        for pin_id in self.en_pin_ids:
+            self.all_pins_mask |= 1 << pin_id
+        if len(self.en_pin_ids) > 0:
+            pin_bit = 1 << self.en_pin_ids[0]
+            exclude_pin_bits = self.all_pins_mask ^ pin_bit
+            machine.mem32[self.en_disable_register] = pin_bit
+            machine.mem32[self.en_enable_register] = exclude_pin_bits
 
     def send(self, data: str, en_pin: Pin | None = None):
         if en_pin == None:
@@ -241,7 +262,7 @@ class IJ_Comm_UART_EN_Multi(_IJ_Comm_Abstract): # Don't use directly. Use IJ_Com
             else:
                 en_pin = self._last_used_en_pin
 
-        self.last_used_en_pin = en_pin
+        self._last_used_en_pin = en_pin
         self._send_lock.acquire()
         self._send_queue.append(data)
         self._queue_en_pins.append(en_pin)
@@ -257,10 +278,15 @@ class IJ_Comm_UART_EN_Multi(_IJ_Comm_Abstract): # Don't use directly. Use IJ_Com
                 self.block_send() 
         
     def _comm_send(self, data: bytes, en_pin: Pin):
-        self.set_en_write_device(en_pin)
+        pin_bit = 1 << self.en_pin_ids[self.en_pins.index(en_pin)]
+        exclude_pin_bits = self.all_pins_mask ^ pin_bit
+        machine.mem32[self.en_disable_register] = exclude_pin_bits
+        machine.mem32[self.en_enable_register] = pin_bit
         self.uart.write(data)
         self.uart.flush()
-        self.set_en_read_device(en_pin)
+        machine.mem32[self.en_disable_register] = pin_bit
+        machine.mem32[self.en_enable_register] = exclude_pin_bits
+        self._last_used_en_pin = en_pin
 
     def _comm_check_receive(self) -> bool:
         return self.uart.any() > 0
@@ -271,19 +297,6 @@ class IJ_Comm_UART_EN_Multi(_IJ_Comm_Abstract): # Don't use directly. Use IJ_Com
             return result
         else:
             return bytes()
-        
-    def set_en_write_device(self, en_pin: Pin):
-        for pin in self.en_pins:
-            if pin != en_pin:
-                pin.value(not self.en_write_state)
-        en_pin.value(self.en_write_state)
-        self._last_used_en_pin = en_pin
-
-    def set_en_read_device(self, en_pin: Pin):
-        en_pin.value(not self.en_write_state)
-        for pin in self.en_pins:
-            if pin != en_pin:
-                pin.value(self.en_write_state)
 
     def make_child(self, data: dict[str, str]):
         en_pin = int(data['en_pin'])
@@ -312,8 +325,9 @@ class IJ_Comm_UART_EN_Multi(_IJ_Comm_Abstract): # Don't use directly. Use IJ_Com
 class IJ_Comm_UART_EN_Multi_Client:
     def __init__(self, parent: IJ_Comm_UART_EN_Multi, en_pin: int):
         self.parent = parent
-        self.en_pin = Pin(en_pin, Pin.OUT, value=parent.en_write_state)
+        self.en_pin = Pin(en_pin, Pin.OUT)
         parent.en_pins.append(self.en_pin)
+        parent.en_pin_ids.append(en_pin)
 
     def send(self, data: str):
         self.parent.send(data, self.en_pin)
@@ -325,6 +339,9 @@ class IJ_Comm_UART_EN_Multi_Client:
         return self.parent.receive()
     
     def update(self):
+        pass
+
+    def initialize(self):
         pass
 
     def block_send(self, duration: int | None = None):

@@ -49,6 +49,9 @@ def load_config(core: IJ_Core, comm_mgr: comm.IJ_Comm_Manager):
             mmu_index += 1
 
         comm_mgr.comm_list = all_comms
+
+        for this_comm in all_comms:
+            this_comm.initialize()
     finally:
         console.end_print()
 

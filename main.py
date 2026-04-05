@@ -6,9 +6,10 @@ from core import IJ_Core
 from comm import IJ_Comm_Manager
 from console import get_console
 from config import load_config
-import time
+import machine
 
 def main():
+    machine.freq(200000000)
     console = get_console()
 
     console.print(f'{SCRIPT_IDENTIFIER} version {SCRIPT_VERSION}', '')
