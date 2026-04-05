@@ -1,5 +1,12 @@
 IFS Jacker - IFS splitter for Flashforge AD5X
 
+***
+A huge amount of work went into this project. If you like it, please consider purchasing some of my paid models on Printables as
+a way to support my work - feel free to think of it as making a donation that you also get a fun model in return for.
+
+https://www.printables.com/@Trumble/store
+***
+
 This is still an early version. Use at your own risk.
 
 At the time of writing this, I have done a few outside-print tests, and exactly two test prints - one with four colors on a single
