@@ -1,0 +1,66 @@
+; config.ini is case-sensitive
+; Lists should be seperated with commas
+; Boolean values should be "true" or "false" (anything other than exactly "true" is considered false; this includes "True" or "1")
+; Almost all parameters are optional.
+
+
+
+[core]      ; Sets core settings (eg. relating to how input / output is processed)
+include_channel_count_in_status=true      ; Default: false. If true, response to F13 commands will add a "channel_count" parameter indicating how many channels the IFS Jacker can provide
+
+
+
+[console]      ; Sets settings relating to the console input / output
+exclude_categories=info,comm      ; Default: (none). Any category of data listed here will not be output to the console
+include_categories=info,comm      ; Default: (none). If this is present and not empty, ONLY categories listed here (with a few exceptions during startup / shutdown) will be output to console
+
+; Valid categories:
+; config - Output from loading configuration data
+; data - Commands being sent / received between the printer and IFSes
+; debug - Generally not used in release versions; used for debug testing info
+; error - Errors / exceptions
+; info - General info
+
+
+
+[uart_multi_X]      ; Preconfiguration for any UART instances which have multiple devices connected to them. Replace X with a name or number to identify the connection.
+uart_instance=1      ; Must be specified. Which hardware UART instance to use. PIO / SoftwareSerial are not currently supported (and SoftwareSerial probably never will be, but PIO is a goal).
+tx_pin=4             ; Must be specified.
+rx_pin=5             ; Must be specified.
+en_write_state=true  ; Default: true. Whether to set EN pins high (true) or low (false) to enable writing. For most RS485 boards this will be high.
+baud=115200          ; Default: 115200.
+bits=8               ; Default: 8.
+parity=parity        ; Default: None. You can specify the literal word "None" if you want to explicitly use none.
+stop_bits=1          ; Default: 1.
+
+
+
+[printer]      ; Printer settings. Omit this altogether if you don't want an upstream printer connection (eg. for testing, or for custom integrations over USB with other printers).
+type=uart_en      ; Must be specified. Connection type. Valid values are 'uart' (pure UART) or 'uart_en' (UART with EN pin).
+uart_instance=0      ; Must be specified. Which hardware UART instance to use.
+tx_pin=0             ; Must be specified.
+rx_pin=1             ; Must be specified.
+en_pin=2             ; Must be specified if type is "uart_en". Not used otherwise.
+en_write_state=true  ; Default: true. Only used if type is "uart_en". Whether to set EN pins high (true) or low (false) to enable writing. For most RS485 boards this will be high.
+baud=115200          ; Default: 115200.
+bits=8               ; Default: 8.
+parity=parity        ; Default: None. You can specify the literal word "None" if you want to explicitly use none.
+stop_bits=1          ; Default: 1.
+
+
+
+[mmu_0]      ; IFS settings for the first IFS. And mmu_1 for the second, mmu_2 for the third, and so on. This example section is for an MMU on a dedicated UART.
+type=uart_en         ; Must be specified (unless a multi_id is specified instead; see below). Connection type. Valid values are 'uart' (pure UART) or 'uart_en' (UART with EN pin).
+uart_instance=1      ; Must be specified. Which hardware UART instance to use.
+tx_pin=4             ; Must be specified.
+rx_pin=5             ; Must be specified.
+en_pin=6             ; Must be specified if type is "uart_en". Not used otherwise.
+en_write_state=true  ; Default: true. Only used if type is "uart_en". Whether to set EN pins high (true) or low (false) to enable writing. For most RS485 boards this will be high.
+baud=115200          ; Default: 115200.
+bits=8               ; Default: 8.
+parity=parity        ; Default: None. You can specify the literal word "None" if you want to explicitly use none.
+stop_bits=1          ; Default: 1.
+
+[mmu_1]      ; This example section is for an MMU connected to a multiple-IFS-on-one-UART setup.
+multi_id=X      ; Must be specified (unless a type is specified instead, see above). Replace X with the name of your multi setup. For example if you used [uart_multi_Kevin], you would put "multi_id=Kevin".
+en_pin=7        ; Must be specified.
