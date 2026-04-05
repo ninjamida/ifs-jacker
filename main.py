@@ -23,27 +23,42 @@ def main():
 
         load_config(core, comm)
 
-        console.print('Starting comm manager on second thread', 'info')
+        console.print('Starting core on second thread', 'info')
         console.flush()
-        comm.start_thread()
+        core.start_thread()
 
-        console.print('Starting core on primary thread', 'info')
+        console.print('Starting comms on primary thread', 'info')
         console.flush()
-        core.run()
+        comm.run()
     except Exception as e:
         console.print_exception(e, 'startup')
         console.flush()
 
-    console.print('Core terminated', 'info')
-    console.flush()
-    
+    console.print('Terminating IFS Jacker', 'info')
+
     if comm.started and not comm.finished:
-        console.print('Waiting for comm manager to exit', 'info')
-        time.sleep_ms(300) # In case shutdown was from a Z99 command, so that the response has time to send
+        console.print('Waiting for comms to exit', 'info')
         comm.terminate = True
-        console.flush()
-        while not comm.finished:
-            pass
+    else:
+        comm.finished = True
+    
+    if core.started and not core.finished:
+        console.print('Waiting for core to exit', 'info')
+        core.terminate = True
+    else:
+        core.finished = True
+    
+    reported_comm_finish = False
+    reported_core_finish = False
+    while not (reported_core_finish and reported_comm_finish):
+        if comm.finished and not reported_comm_finish:
+            if comm.started:
+                console.print('Comms terminated', 'info')
+            reported_comm_finish = True
+        if core.finished and not reported_core_finish:
+            if core.started:
+                console.print('Core terminated', 'info')
+            reported_core_finish = True
 
     console.print('IFS Jacker terminated', '')
     console.flush()

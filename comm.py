@@ -30,6 +30,7 @@ class IJ_Comm_Manager:
         self.started = True
         update_index = 0
         while not self.terminate:
+            self.console.flush()
             try:
                 if update_index >= len(self.comm_list):
                     update_index = 0

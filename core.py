@@ -28,6 +28,9 @@ class IJ_Core:
 
         self.include_channel_count_in_status = True
 
+    def start_thread(self):
+        _thread.start_new_thread(self.run, ())
+
     def send_printer(self, data: str):
         if self.printer_comm:
             self.printer_comm.send(data)
@@ -144,6 +147,8 @@ class IJ_Core:
                     self.chan = new_chan + self.last_send_mmu_id * 4
                     if new_ffs_state in [7, 11, 12, 15, 18, 22, 23, 26, 29, 33, 34, 37, 40, 44, 45, 48]:
                         self.ffs_state = new_ffs_state + (self.last_send_mmu_id * 44) # 11 per channel
+                    else:
+                        self.ffs_state = new_ffs_state
 
                 out_text = [f'F13 ok. FFS_state: {self.ffs_state} silk_state: {self.silk_state} chan: {self.chan}']
                 out_text += [f'ffs_channels_insert: {self.channels_insert} stall_state: {self.stall_state}']
@@ -172,7 +177,6 @@ class IJ_Core:
         self.started = True
         while not self.terminate:
             try:
-                self.console.flush()
                 self.update_printer()
                 self.update_mmu()
             except KeyboardInterrupt:
