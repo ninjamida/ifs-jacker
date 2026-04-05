@@ -1,4 +1,14 @@
-This is still beta. I have done some very limited testing of things like loading colors etc. No actual print yet. Use at your own risk.
+IFS Jacker - IFS splitter for Flashforge AD5X
+
+This is still an early version. Use at your own risk.
+
+At the time of writing this, I have done a few outside-print tests, and exactly two test prints - one with four colors on a single
+IFS (but running through IFS Jacker, and on channels 5, 6, 7 and 8), and one eight-color print. Both of them completed without any
+IFS Jacker problems (the 8 color print did run into a few issues arising from the 8-in-1 adapter I was using, but ultimately was
+successful).
+
+You will need zMod in order to use this. Support for this is not yet integrated into zMod, you will need to merge it into your
+copy yourself. See here: https://github.com/ghzserg/z_ad5x/pull/8
 
 Code is written for RP2040 Zero (and by extension should be compatible with Raspberry Pi Pico). Compatibility with other boards is not
 guaranteed. It can likely be adapted to any board that supports MicroPython and has two cores with some degree of effort.
@@ -8,7 +18,8 @@ customizing config.ini.
 
 Not that savvy and don't want to design your own build for this? I have a pre-designed build you can use; this is powered from the AD5X
 itself and allows connecting two IFSes, optionally with a (always-on) 24V power header that can be used to connect a couple of rear-
-panel fans. The provided config.ini is preconfigured for this build.
+panel fans. The provided config.ini is preconfigured for this build. You will need to be able to crimp cables in order to use this
+design; soldering is not required.
 
 https://www.printables.com/model/1644745-ifs-jacker-multi-ifs-adapter-for-zmodded-flashforg
 
@@ -25,4 +36,6 @@ the AD5X's IFS port.
 
 The connector used for the IFSes is a four-pin Microfit 3.0. If you are using third-party cables, ensure that the pins connect as
 expected - while the voltage / GND seem to be consistent across brands (at least between Flashforge and Bambu), the data lines may
-be inverted on some cables. This can be handled simply by crossing the A / B lines where they connect to the RS485 converter.
+be inverted on some cables. This can be handled simply by crossing the A / B lines where they connect to the RS485 converter. If
+you are mounting one IFS on each side of your AD5X, I strongly recommend getting or making a longer cable (75cm to 1m) for the IFS
+on the left side.
