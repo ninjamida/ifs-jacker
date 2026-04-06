@@ -49,3 +49,15 @@ expected - while the voltage / GND seem to be consistent across brands (at least
 be inverted on some cables. This can be handled simply by crossing the A / B lines where they connect to the RS485 converter. If
 you are mounting one IFS on each side of your AD5X, I strongly recommend getting or making a longer cable (75cm to 1m) for the IFS
 on the left side.
+
+---
+
+Are you developing an alternative firmware mod, or a Z-Mod plugin, and want to support IFS Jacker in it? All you need to do is talk
+to it as if it's an IFS with 8 (or 12, or 16, etc) channels - just follow the logical extensions of existing commands / status codes.
+To find out how many channels it has, check the extra "channel_count" param in the response to F13. (This does require enabling this
+in IFS Jacker's settings.)
+
+Extra commands (for status checks etc) are planned, but at the moment there are only two:
+
+Z1 - This simply returns "Z1 ok." and does nothing else. The intent is to use it simply to confirm the presence of an IFS Jacker.
+Z99 - This causes the IFS Jacker software to terminate (and the RP2040 to return to the MicroPython REPL interface).
