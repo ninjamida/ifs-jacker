@@ -75,11 +75,20 @@ existing commands / status codes. To find out how many channels it has, check
 the extra "channel_count" param in the response to F13. (This does require
 enabling this in IFS Jacker's settings.)
 
-Extra commands (for status checks etc) are planned, but at the moment there are
-only two:
+A few extra commands are also available. Sample responses are also provided. Any
+newlines in these responses are purely for readability; responses are sent as a
+single line of text.
 
-Z1 - This simply returns "Z1 ok." and does nothing else. The intent is to use it
-     simply to confirm the presence of an IFS Jacker.
+Z1 - This command does nothing but respond. It can be used to confirm the
+     presence of an IFS Jacker. Z2 can then be used to get more info. (Of course
+     you could also just directly use Z2; but Z1 was implemented earlier.)
+ Response: Z1 ok.
+  
+Z2 - Get information on IFS Jacker software and configuration.
+ Response: Z2 ok. software: "IFS Jacker" version: "2.1.0" author: "Namida
+           Verasche (Trumble)" ifs_count: 2 channel_count: 8 peripheral_count: 0
+    Most of these are self-explanatory. Peripheral count will currently always
+    be zero and is there for the sake of future planned features.
      
 Z99 - This causes the IFS Jacker software to terminate (and the RP2040 to return
       to the MicroPython REPL interface).

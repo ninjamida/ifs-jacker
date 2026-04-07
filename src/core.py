@@ -1,6 +1,7 @@
 import _thread, sys, uselect, re
 from comm import _IJ_Comm_Abstract
 from console import get_console
+from util import SCRIPT_IDENTIFIER, SCRIPT_VERSION, SCRIPT_AUTHOR
 
 class IJ_Core:
     def __init__(self):
@@ -72,6 +73,16 @@ class IJ_Core:
             if z > 0:
                 if z == 1:
                     self.send_printer('Z1 ok.')
+
+                if z == 2:
+                    data = ['Z2 ok.']
+                    data += [f'software: "{SCRIPT_IDENTIFIER}"']
+                    data += [f'version: "{SCRIPT_VERSION}"']
+                    data += [f'author: "{SCRIPT_AUTHOR}"']
+                    data += [f'ifs_count: {len(self.mmu_comms)}']
+                    data += [f'channel_count: {len(self.mmu_comms) * 4}']
+                    data += [f'peripheral_count: 0']
+                    self.send_printer(' '.join(data))
 
                 if z == 99:
                     self.terminate = True

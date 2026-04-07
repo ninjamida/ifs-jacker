@@ -1,12 +1,13 @@
-SCRIPT_IDENTIFIER = 'IFS Jacker'
-SCRIPT_AUTHOR = 'Namida Verasche (Trumble)'
-SCRIPT_VERSION = '2.0.0'
+# IFS Jacker code by Namida Verasche
+# https://github.com/ninjamida/ifs-jacker
+# Version info in util.py
 
 from core import IJ_Core
 from comm import IJ_Comm_Manager
 from console import get_console
 from config import load_config
 import machine
+from util import SCRIPT_IDENTIFIER, SCRIPT_VERSION, SCRIPT_AUTHOR
 
 def main():
     machine.freq(200000000)
