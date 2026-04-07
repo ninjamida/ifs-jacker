@@ -1,4 +1,4 @@
-import _thread, sys, uselect, re
+import _thread, re, time
 from comm import _IJ_Comm_Abstract
 from console import get_console
 from util import SCRIPT_IDENTIFIER, SCRIPT_VERSION, SCRIPT_AUTHOR
@@ -29,6 +29,9 @@ class IJ_Core:
         self.force_present_mask = 0
         self.force_absent_mask = ~0
 
+        self.timeout = 3 * 1000
+        self.timeout_expire = None
+
         self.queued_F18 = []
         self.done_queued_F18_skip = False
         self.hide_next_response = False # if true, will send an F13 response instead
@@ -58,6 +61,19 @@ class IJ_Core:
                 printer_incoming_data = ''
 
         if len(printer_incoming_data) > 0:
+            if self.timeout > 0:
+                if self.timeout_expire is None:
+                    self.console.print('Printer connected', 'info')
+                    for peripheral in self.peripherals:
+                        if peripheral.use_primary_thread and peripheral.auto_thread_lock:
+                            peripheral.thread_lock.acquire()
+                        try:
+                            peripheral.activate()
+                        finally:
+                            if peripheral.use_primary_thread and peripheral.auto_thread_lock:
+                                peripheral.thread_lock.release()
+                self.timeout_expire = time.ticks_add(time.ticks_ms(), self.timeout)
+
             in_split = printer_incoming_data.split(' ')
             f = 0
             c = 0
@@ -103,7 +119,14 @@ class IJ_Core:
 
                 if z == 5:
                     if c >= 0 and c < len(self.peripherals):
-                        self.send_printer(self.peripherals[c].handle_command(f, l, s))
+                        peripheral = self.peripherals[c]
+                        if peripheral.use_primary_thread and peripheral.auto_thread_lock:
+                            peripheral.thread_lock.acquire()
+                        try:
+                            self.send_printer(self.peripherals[c].handle_command(f, l, s))
+                        finally:
+                            if peripheral.use_primary_thread and peripheral.auto_thread_lock:
+                                peripheral.thread_lock.release()
                     else:
                         self.send_printer(f'Z5 ok. Invalid peripheral index {c}')
 
@@ -220,12 +243,12 @@ class IJ_Core:
                 if self.include_peripherals_in_status:
                     for i, peripheral in enumerate(self.peripherals):
                         if peripheral.report_in_F13:
-                            if peripheral.use_primary_thread:
+                            if peripheral.use_primary_thread and peripheral.auto_thread_lock:
                                 peripheral.thread_lock.acquire()
                             try:
                                 out_text += [f'peripheral_{i}: {peripheral.get_status_code()}']
                             finally:
-                                if peripheral.use_primary_thread:
+                                if peripheral.use_primary_thread and peripheral.auto_thread_lock:
                                     peripheral.thread_lock.release()
 
                 out_text += ['jinsi_GCONF: 000001dc qiehuan_GCONF: 000001dc']
@@ -242,6 +265,20 @@ class IJ_Core:
                 )
                 self.send_printer(mmu_incoming_data)
 
+    def update_timeout(self):
+        if self.timeout > 0 and self.timeout_expire:
+            if time.ticks_diff(self.timeout_expire, time.ticks_ms()) < 0:
+                self.console.print("Printer disconnected", 'info')
+                self.timeout_expire = None
+                for peripheral in self.peripherals:
+                    if peripheral.use_primary_thread and peripheral.auto_thread_lock:
+                        peripheral.thread_lock.acquire()
+                    try:
+                        peripheral.timeout()
+                    finally:
+                        if peripheral.use_primary_thread and peripheral.auto_thread_lock:
+                            peripheral.thread_lock.release()
+
     def run(self):
         self.started = True
         update_peripheral_index = 0
@@ -249,6 +286,7 @@ class IJ_Core:
             try:
                 self.update_printer()
                 self.update_mmu()
+                self.update_timeout()
 
                 if len(self.peripherals) > 0:
                     if update_peripheral_index >= len(self.peripherals):
@@ -267,12 +305,12 @@ class IJ_Core:
                         
         for peripheral in self.peripherals:
             try:
-                if peripheral.use_primary_thread:
+                if peripheral.use_primary_thread and peripheral.auto_thread_lock:
                     peripheral.thread_lock.acquire()
                 try:
                     peripheral.shutdown()
                 finally:
-                    if peripheral.use_primary_thread:
+                    if peripheral.use_primary_thread and peripheral.auto_thread_lock:
                         peripheral.thread_lock.release()
             except Exception as e:
                 self.console.print_exception(e)

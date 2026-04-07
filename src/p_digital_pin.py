@@ -29,6 +29,8 @@ class IJP_Digital_Pin(IJ_Peripheral):
         else:
             self.identifier += 'Input'
             self.pin = Pin(pin_id, Pin.IN, pull=default_state)
+
+        self.state_on_timeout: bool | None = False
         
         self.report_in_F13 = not is_output
         self.report_in_Z4 = self.report_in_F13
@@ -47,6 +49,10 @@ class IJP_Digital_Pin(IJ_Peripheral):
     def get_status_code(self) -> int:
         return self.pin.value()
     
+    def timeout(self):
+        if self.is_output and self.state_on_timeout is not None:
+            self.pin.value(self.state_on_timeout)
+    
     @staticmethod
     def create(config_data: dict[str, str], all_comms: list[_IJ_Comm_Abstract]):
         is_output = config_data.get('output', 'false') == 'true'
@@ -60,5 +66,11 @@ class IJP_Digital_Pin(IJ_Peripheral):
         else:
             default_state = Pin.PULL_UP if default_state == 'true' else Pin.PULL_DOWN
             result = IJP_Digital_Pin(pin_id, default_state, False)
+
+        state_on_timeout = config_data.get('state_on_timeout', 'true')
+        if state_on_timeout == 'none':
+            result.state_on_timeout = None
+        else:
+            result.state_on_timeout = state_on_timeout == 'true'
 
         return result

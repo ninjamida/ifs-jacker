@@ -4,9 +4,6 @@ import _thread
 #  File name: p_example.py [must be lowercase]
 #  Class name: IJP_Example ["IJP" is case-sensitive, "Example" is not]
 #
-# For those that run on the primary thread, IJ_Core will lock the thread before calling get_status_code.
-# However, it will NOT do so for handle_command (as not all commands require this).
-#
 # Conventions for commands:
 #  F parameter specifies the command itself. Three values are reserved:
 #     F0 - Should never be a valid command
@@ -25,18 +22,25 @@ import _thread
 class IJ_Peripheral:
     def __init__(self):
         self.use_primary_thread = False
+        self.auto_thread_lock = True
         self.thread_lock = _thread.allocate_lock()
         self.identifier = 'Unknown Peripheral'
         self.report_in_F13 = False
         self.report_in_Z4 = False
 
-    def update(self):
+    def update(self): # Runs frequently while idle.
         pass
 
-    def initialize(self):
+    def initialize(self): # Runs once. Thread safety isn't needed here as only one thread is active when this is called.
         pass
 
-    def shutdown(self):
+    def shutdown(self): # Runs when IFS Jacker is shutting down. Thread safety is still needed.
+        pass
+
+    def timeout(self): # Runs if the connection to the printer times out.
+        pass
+
+    def activate(self): # Runs when the connection to the printer becomes active (at first startup or reconnecting after a timeout)
         pass
 
     def handle_command(self, f=0, l=0, s=0) -> str:

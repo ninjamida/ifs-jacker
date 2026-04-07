@@ -22,6 +22,8 @@ class IJP_PWM_Output(IJ_Peripheral):
         self.identifier = f'PWM Output {pin_id}'
         self.pin = PWM(Pin(pin_id), duty_u16=initial_power)
         self.pin.freq(frequency)
+
+        self.power_on_timeout: int | None = 0
     
     def handle_command(self, f=0, l=0, s=0) -> str:
         if f == 2:
@@ -44,9 +46,22 @@ class IJP_PWM_Output(IJ_Peripheral):
         self.pin.duty_u16(0)
         self.pin.deinit()
 
+    def timeout(self):
+        if self.power_on_timeout is not None:
+            self.pin.duty_u16(self.power_on_timeout)
+
     @staticmethod
     def create(config_data: dict[str, str], all_comms: list[_IJ_Comm_Abstract]):
         pin_id = int(config_data['pin'])
         frequency = int(config_data['frequency'])
         initial_power = int(config_data.get('initial_power', 0))
-        return IJP_PWM_Output(pin_id, frequency, initial_power)
+
+        result = IJP_PWM_Output(pin_id, frequency, initial_power)
+
+        power_on_timeout = config_data.get('power_on_timeout', 0)
+        if power_on_timeout == 'none':
+            result.power_on_timeout = None
+        else:
+            result.power_on_timeout = int(power_on_timeout)
+
+        return result
