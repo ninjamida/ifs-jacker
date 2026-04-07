@@ -13,6 +13,7 @@ class IJP_Dummy(IJ_Peripheral):
         super().__init__()
         self.identifier = 'Dummy Peripheral'
         self.report_in_F13 = False
+        self.report_in_Z4 = False
     
     @staticmethod
     def create(config_data: dict[str, str], all_comms: list[_IJ_Comm_Abstract]):

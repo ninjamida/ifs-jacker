@@ -31,6 +31,7 @@ class IJP_Digital_Pin(IJ_Peripheral):
             self.pin = Pin(pin_id, Pin.IN, pull=default_state)
         
         self.report_in_F13 = not is_output
+        self.report_in_Z4 = self.report_in_F13
 
     def handle_command(self, f=0, l=0, s=0) -> str:
         if f == 2:
