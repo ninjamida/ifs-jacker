@@ -66,3 +66,12 @@ stop_bits=1          ; Default: 1.
 [mmu_1]      ; This example section is for an MMU connected to a multiple-IFS-on-one-UART setup.
 multi_id=X      ; Must be specified (unless a type is specified instead, see above). Replace X with the name of your multi setup. For example if you used [uart_multi_Kevin], you would put "multi_id=Kevin".
 en_pin=7        ; Must be specified.
+
+
+
+[peripheral_0]      ; Defines a peripheral (an added input/output of some kind, which may be purely software, that can be accessed via the IFS Jacker)
+type=dummy      ; Must be specified. Type of peripheral. This should match the script and class name (p_dummy.py / IJP_Dummy) but always lowercase.
+identifier=Sample Peripheral      ; Default depends on type. Specifies a name for the peripheral (shown in Z3 response).
+report_f13=true      ; Default depends on type. Whether or not to show the peripheral's status code in F13 responses.
+report_z4=true      ; Default is whatever report_f13 is set to (which may be its default). Same as above but for Z4.
+; Additional parameters will exist depending on the specific peripheral type.

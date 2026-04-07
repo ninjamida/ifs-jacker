@@ -20,6 +20,7 @@ GPIO_OUT_CLR = SIO_BASE + 0x18
 class IJ_Comm_Manager:
     def __init__(self):
         self.comm_list = []
+        self.peripherals = []
         self.started = False
         self.terminate = False
         self.finished = False
@@ -32,15 +33,25 @@ class IJ_Comm_Manager:
 
     def run(self):
         self.started = True
-        update_index = 0
+        update_comm_index = 0
+        update_peripheral_index = 0
         while not self.terminate:
             self.console.flush()
             try:
-                if update_index >= len(self.comm_list):
-                    update_index = 0
-                else:
-                    self.comm_list[update_index].update()
-                    update_index += 1
+                if len(self.comm_list) > 0:
+                    if update_comm_index >= len(self.comm_list):
+                        update_comm_index = 0
+                    else:
+                        self.comm_list[update_comm_index].update()
+                        update_comm_index += 1
+
+                if len(self.peripherals) > 0:
+                    if update_peripheral_index >= len(self.peripherals):
+                        update_peripheral_index = 0
+                    else:
+                        if self.peripherals[update_peripheral_index].use_primary_thread:
+                            self.peripherals[update_peripheral_index].update()
+                    update_peripheral_index += 1
             except KeyboardInterrupt:
                 self.terminate = True
             except Exception as e:

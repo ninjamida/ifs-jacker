@@ -87,8 +87,19 @@ Z1 - This command does nothing but respond. It can be used to confirm the
 Z2 - Get information on IFS Jacker software and configuration.
  Response: Z2 ok. software: "IFS Jacker" version: "2.1.0" author: "Namida
            Verasche (Trumble)" ifs_count: 2 channel_count: 8 peripheral_count: 0
-    Most of these are self-explanatory. Peripheral count will currently always
-    be zero and is there for the sake of future planned features.
+
+Z3 - Get the identifiers of all peripherals.
+ Response: Z3 ok. peripheral_0: "Digital Pin 12 Input" peripheral_1: "Dummy"
+     If there are no peripherals, it will just respond "Z3 ok."
+     
+Z4 - Get the status codes of all peripherals.
+ Response: Z4 ok. peripheral_0: 1
+     If there are no peripherals, or all peripherals are configured not to
+     report in Z4, it will just respond "Z4 ok."
+     
+Z5 - Send a command to a peripheral. F, C, L and S params are passed on.
+ Response: Z5 ok. F3 peripheral ok. Pin set high
+       or: Z5 ok. Invalid peripheral index 5
      
 Z99 - This causes the IFS Jacker software to terminate (and the RP2040 to return
       to the MicroPython REPL interface).
