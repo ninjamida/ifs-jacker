@@ -33,6 +33,12 @@ class IJ_Peripheral:
     def update(self):
         pass
 
+    def initialize(self):
+        pass
+
+    def shutdown(self):
+        pass
+
     def handle_command(self, f=0, l=0, s=0) -> str:
         if f == 1:
             return 'F1 peripheral ok. f{self.identifier}'

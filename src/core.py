@@ -265,4 +265,16 @@ class IJ_Core:
             if self.comm.terminate:
                 self.terminate = True
                         
+        for peripheral in self.peripherals:
+            try:
+                if peripheral.use_primary_thread:
+                    peripheral.thread_lock.acquire()
+                try:
+                    peripheral.shutdown()
+                finally:
+                    if peripheral.use_primary_thread:
+                        peripheral.thread_lock.release()
+            except Exception as e:
+                self.console.print_exception(e)
+
         self.finished = True

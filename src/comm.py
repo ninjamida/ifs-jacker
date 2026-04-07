@@ -59,6 +59,12 @@ class IJ_Comm_Manager:
 
             if self.core.terminate:
                 self.terminate = True
+
+        for comm_interface in self.comm_list:
+            try:
+                comm_interface.shutdown()
+            except Exception as e:
+                self.console.print_exception(e)
         self.finished = True
 
 class _IJ_Comm_Abstract:
@@ -126,6 +132,9 @@ class _IJ_Comm_Abstract:
                 self._send_unblock_time = time.ticks_ms() 
 
     def initialize(self):
+        pass
+
+    def shutdown(self):
         pass
 
     def _send_next_queued_command(self):
@@ -353,6 +362,9 @@ class IJ_Comm_UART_EN_Multi_Client:
         pass
 
     def initialize(self):
+        pass
+
+    def shutdown(self):
         pass
 
     def block_send(self, duration: int | None = None):
