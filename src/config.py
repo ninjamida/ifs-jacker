@@ -13,6 +13,7 @@ def load_config(core: IJ_Core, comm_mgr: comm.IJ_Comm_Manager):
     try:
         core_data = ini_data.get('core', {})
         core.include_channel_count_in_status = core_data.get('include_channel_count_in_status', 'false') == 'true'
+        core.F13_timeout = int(float(core_data.get('f13_timeout', 0.075)) * 1000)
         force_present_channels = [item.strip() for item in core_data.get('force_present_channels', '').split(',')]
         force_absent_channels = [item.strip() for item in core_data.get('force_absent_channels', '').split(',')]
         if len(force_absent_channels) > 1 or force_absent_channels[0] != '':
