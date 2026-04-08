@@ -1,4 +1,4 @@
-import _thread, sys, uselect, re
+import _thread, re, time
 from comm import _IJ_Comm_Abstract
 from console import get_console
 from util import SCRIPT_IDENTIFIER, SCRIPT_VERSION, SCRIPT_AUTHOR
@@ -28,6 +28,9 @@ class IJ_Core:
 
         self.force_present_mask = 0
         self.force_absent_mask = ~0
+
+        self.F13_timeout = int(0.075 * 1000)
+        self.F13_timeout_expire: int | None = None
 
         self.queued_F18 = []
         self.done_queued_F18_skip = False
@@ -89,6 +92,8 @@ class IJ_Core:
                     self.send_printer('Z99 ok. Terminating')
 
             if z == 0 and f > 0:    
+                self.hide_next_response = False
+
                 if c > 0:
                     mmu = (c - 1) // 4
                     c = ((c - 1) % 4) + 1
@@ -100,6 +105,8 @@ class IJ_Core:
                     self.done_queued_F18_skip = False
                     self.status_mmu_id = mmu
                 if f == 13:
+                    if self.F13_timeout > 0:
+                        self.F13_timeout_expire = time.ticks_add(time.ticks_ms(), self.F13_timeout)
                     if len(self.queued_F18) > 0 and self.done_queued_F18_skip:
                         mmu = self.queued_F18.pop(0)
                         f = 18
@@ -117,11 +124,9 @@ class IJ_Core:
                             l = 0
                             mmu = self.status_mmu_id
                         else:
-                            # If there are no MMUs, send an immediate response with fake data.
-                            if self.include_channel_count_in_status:
-                                self.send_printer('F13 ok. FFS_state: 5 silk_state: 0 chan: 0 ffs_channels_insert: 0 stall_state: 0 channel_count: 0 jinsi_GCONF: 00000000 qiehuan_GCONF: 00000000')
-                            else:
-                                self.send_printer('F13 ok. FFS_state: 5 silk_state: 0 chan: 0 ffs_channels_insert: 0 stall_state: 0 jinsi_GCONF: 00000000 qiehuan_GCONF: 00000000')
+                            # If there are no MMUs, set the timeout to immediate and exit this function. The timeout will take care of the rest.
+                            self.F13_timeout_expire = time.ticks_ms()
+                            return
 
                 elements = [f'F{f}']
                 if c > 0:
@@ -138,19 +143,20 @@ class IJ_Core:
             self.last_send_mmu_id = mmu
 
     def update_mmu(self):
-        if len(self.mmu_comms) == 0:
-            return
-        mmu = self.mmu_comms[self.last_send_mmu_id]
-        if mmu.check_receive():
-            mmu_incoming_data = mmu.receive().strip()
-            self.console.print(f'mmu{self.last_send_mmu_id} >> {mmu_incoming_data}', 'data')
-        else:
-            mmu_incoming_data = ''
+        mmu_incoming_data = ''
+        if len(self.mmu_comms) > 0:
+            mmu = self.mmu_comms[self.last_send_mmu_id]
+            if mmu.check_receive():
+                mmu_incoming_data = mmu.receive().strip()
+                self.console.print(f'mmu{self.last_send_mmu_id} >> {mmu_incoming_data}', 'data')
+        if mmu_incoming_data == '' and self.F13_timeout_expire and time.ticks_diff(self.F13_timeout_expire, time.ticks_ms()) < 0:
+            mmu_incoming_data = 'F13'
 
         if len(mmu_incoming_data) > 0:
             cmd_id = int(mmu_incoming_data.split(' ', 1)[0][1:])
 
             if cmd_id == 13 or self.hide_next_response:
+                self.F13_timeout_expire = None
                 if cmd_id == 13:
                     cmd_split = mmu_incoming_data.split(' ')
 
@@ -198,7 +204,7 @@ class IJ_Core:
 
                 self.send_printer(' '.join(out_text))
 
-                if self.last_send_mmu_id != self.active_mmu_id or self.ffs_state == 5:
+                if len(self.mmu_comms) > 0 and (self.last_send_mmu_id != self.active_mmu_id or self.ffs_state == 5):
                     self.status_mmu_id = (self.status_mmu_id + 1) % len(self.mmu_comms)
             else:
                 mmu_incoming_data = re.sub(
