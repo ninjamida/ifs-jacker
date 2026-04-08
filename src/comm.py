@@ -51,7 +51,7 @@ class IJ_Comm_Manager:
                     else:
                         if self.peripherals[update_peripheral_index].use_primary_thread:
                             self.peripherals[update_peripheral_index].update()
-                    update_peripheral_index += 1
+                        update_peripheral_index += 1
             except KeyboardInterrupt:
                 self.terminate = True
             except Exception as e:
