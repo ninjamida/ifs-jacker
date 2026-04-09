@@ -18,9 +18,26 @@ completed without any IFS Jacker problems (the 8 color print did run into a few
 issues arising from the 8-in-1 adapter I was using, but ultimately was
 successful).
 
-You will need zMod in order to use this. Support for this is not yet integrated
-into zMod, you will need to merge it into your copy yourself. See here:
+You will need Z-Mod in order to use this. This requires a PR that has not yet
+been merged into Z-Mod at the time of writing this, so you will need to copy
+the modified files into your Z-Mod install manually:
 https://github.com/ghzserg/z_ad5x/pull/8
+
+You will also either need to set a "color_limit" param in your [zmod_ifs]
+configuration section (set it to the number of colors you have available), or
+install the IFS Jacker plugin. At the time of writing, the IFS Jacker plugin
+must manually be added to zMod's plugin list. To do this, add the following to
+your user.moonraker.conf file then restart your printer:
+
+[update_manager ifs_jacker]
+type: git_repo
+channel: stable
+path: /root/printer_data/config/mod_data/plugins/ifs_jacker
+origin: https://github.com/ninjamida/ifs_jacker_plugin.git
+is_system_service: False
+primary_branch: master
+
+Once installed, run "ENABLE_PLUGIN NAME=ifs_jacker" to enable it.
 
 Code is written for RP2040 Zero (and by extension should be compatible with
 Raspberry Pi Pico). Compatibility with other boards is not guaranteed. It can
@@ -41,7 +58,7 @@ can be used to connect a couple of rear-panel fans. The provided config.ini is
 preconfigured for this build. You will need to be able to crimp cables in order
 to use this design; soldering is not required.
 
-https://www.printables.com/model/1644745-ifs-jacker-multi-ifs-adapter-for-zmodded-flashforg
+https://www.printables.com/model/1644745-ifs-jacker
 
 To connect to the AD5X, you can either bypass the RS485 converter in the AD5X
 altogether (in which case use UART connection mode), or you can connect via an
