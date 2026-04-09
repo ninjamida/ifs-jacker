@@ -1,7 +1,8 @@
 from util import load_ini_file
 from console import get_console
 from core import IJ_Core
-import comm
+from p_dummy import IJP_Dummy
+import comm, gc
 
 STANDARD_COMM_GENERATION_TYPES = [comm.IJ_Comm_UART, comm.IJ_Comm_UART_EN]
 
@@ -12,7 +13,9 @@ def load_config(core: IJ_Core, comm_mgr: comm.IJ_Comm_Manager):
     console.begin_print('config')
     try:
         core_data = ini_data.get('core', {})
-        core.include_channel_count_in_status = core_data.get('include_channel_count_in_status', 'false') == 'true'
+        core.timeout = int(float(core_data.get('timeout', 3)) * 1000)
+        core.include_channel_count_in_status = core_data.get('include_channel_count_in_status', 'true') == 'true'
+        core.include_peripherals_in_status = core_data.get('include_peripherals_in_status', 'true') == 'true'
         core.F13_timeout = int(float(core_data.get('f13_timeout', 0.075)) * 1000)
         force_present_channels = [item.strip() for item in core_data.get('force_present_channels', '').split(',')]
         force_absent_channels = [item.strip() for item in core_data.get('force_absent_channels', '').split(',')]
@@ -63,10 +66,18 @@ def load_config(core: IJ_Core, comm_mgr: comm.IJ_Comm_Manager):
 
         comm_mgr.comm_list = all_comms
 
+        peripherals = load_peripherals(ini_data, all_comms)
+        core.peripherals = peripherals
+        comm_mgr.peripherals = peripherals
+
         for this_comm in all_comms:
             this_comm.initialize()
+
+        for this_peripheral in peripherals:
+            this_peripheral.initialize()
     finally:
         console.end_print()
+        gc.collect()
 
 def get_comm(data: dict[str, str], multi_connections: dict):
     multi_id = data.get('multi_id', '')
@@ -82,4 +93,45 @@ def get_comm(data: dict[str, str], multi_connections: dict):
             return standard_type.make_from_config(data)
         
     raise Exception(f'Invalid comm type "{comm_type}"')
-            
+
+def load_peripherals(ini_data: dict[str, dict[str, str]], all_comms: list[comm._IJ_Comm_Abstract]) -> list:
+    highest_index = -1
+    for sec_name in ini_data.keys():
+        if sec_name.startswith('peripheral_'):
+            try:
+                this_index = int(sec_name[11:])
+                highest_index = max(highest_index, this_index)
+            except:
+                pass
+
+    result = []
+    for i in range(highest_index + 1):
+        if f'peripheral_{i}' in ini_data:
+            try:
+                peripheral_sec = ini_data[f'peripheral_{i}']
+                peripheral_type = peripheral_sec['type']
+                module = __import__(f'p_{peripheral_type}')
+                cls = None
+                for attr in dir(module):
+                    if attr.lower() == f'ijp_{peripheral_type}':
+                        cls = getattr(module, attr)
+                        break
+                if cls is None:
+                    raise ImportError(f'Class not found')
+                
+                new_peripheral = cls.create(peripheral_sec, all_comms)
+
+                new_peripheral.identifier = peripheral_sec.get('identifier', new_peripheral.identifier)
+
+                new_peripheral.report_in_F13 = (peripheral_sec.get('report_f13', 'true' if new_peripheral.report_in_F13 else 'false') == 'true')
+                new_peripheral.report_in_Z4 = (peripheral_sec.get('report_z4', 'true' if new_peripheral.report_in_F13 else 'false') == 'true')
+
+                result.append(new_peripheral)
+            except:
+                new_peripheral = IJP_Dummy()
+                new_peripheral.identifier = "Failed to load"
+                result.append(new_peripheral)
+        else:
+            result.append(IJP_Dummy())
+
+    return result
