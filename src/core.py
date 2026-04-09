@@ -126,7 +126,8 @@ class IJ_Core:
                         if peripheral.use_primary_thread and peripheral.auto_thread_lock:
                             peripheral.thread_lock.acquire()
                         try:
-                            self.send_printer(self.peripherals[c].handle_command(f, l, s))
+                            result = self.peripherals[c].handle_command(f, l, s)
+                            self.send_printer(f'Z5 ok. {result}')
                         finally:
                             if peripheral.use_primary_thread and peripheral.auto_thread_lock:
                                 peripheral.thread_lock.release()
