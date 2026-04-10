@@ -151,6 +151,9 @@ class IJ_Core:
                     self.queued_F18.remove(mmu)
                     self.done_queued_F18_skip = False
                     self.status_mmu_id = mmu
+                if f == 37:
+                    # Not safe to do firmware updates through IFS Jacker at this time. Block it entirely by substituting it to F13.
+                    f = 13
                 if f == 13:
                     if self.F13_timeout > 0:
                         self.F13_timeout_expire = time.ticks_add(time.ticks_ms(), self.F13_timeout)
