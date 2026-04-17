@@ -48,7 +48,7 @@ class IJ_Peripheral:
             return 'F1 peripheral ok. f{self.identifier}'
         if f == 2:
             return "F2 peripheral ok. No data"
-        
+
         return f'F{f} peripheral ok. Unknown command'
 
     def get_status_code(self) -> int:

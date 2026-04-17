@@ -13,10 +13,10 @@ def load_config(core: IJ_Core, comm_mgr: comm.IJ_Comm_Manager):
     console.begin_print('config')
     try:
         core_data = ini_data.get('core', {})
-        core.timeout = int(float(core_data.get('timeout', 3)) * 1000)
+        core.printer_connected_timeout = int(float(core_data.get('timeout', 3)) * 1000)
         core.include_channel_count_in_status = core_data.get('include_channel_count_in_status', 'true') == 'true'
         core.include_peripherals_in_status = core_data.get('include_peripherals_in_status', 'true') == 'true'
-        core.F13_timeout = int(float(core_data.get('f13_timeout', 0.075)) * 1000)
+        core.mmu_response_timeout = int(float(core_data.get('mmu_timeout', 0.05)) * 1000)
         force_present_channels = [item.strip() for item in core_data.get('force_present_channels', '').split(',')]
         force_absent_channels = [item.strip() for item in core_data.get('force_absent_channels', '').split(',')]
         if len(force_absent_channels) > 1 or force_absent_channels[0] != '':
@@ -33,7 +33,7 @@ def load_config(core: IJ_Core, comm_mgr: comm.IJ_Comm_Manager):
         console_data = ini_data.get('console', {})
         console.exclude_categories = [item.strip() for item in console_data.get('exclude_categories', '').split(',')]
         if len(console.exclude_categories) == 1 and console.exclude_categories[0] == '':
-            console.exclude_categories = []
+            console.exclude_categories = ['silent']
         console.include_categories = [item.strip() for item in console_data.get('include_categories', '').split(',')]
         if len(console.include_categories) == 1 and console.include_categories[0] == '':
             console.include_categories = []
@@ -54,7 +54,7 @@ def load_config(core: IJ_Core, comm_mgr: comm.IJ_Comm_Manager):
             console.print(f'Loading printer', 'config')
             core.printer_comm = get_comm(printer_data, multi_connections)
             all_comms.append(core.printer_comm)
-        
+
         mmu_index = 0
         while f'mmu_{mmu_index}' in ini_data.keys():
             console.print(f'Loading MMU {mmu_index}', 'config')
@@ -91,7 +91,7 @@ def get_comm(data: dict[str, str], multi_connections: dict):
     for standard_type in STANDARD_COMM_GENERATION_TYPES:
         if standard_type.__name__.lower() == comm_type:
             return standard_type.make_from_config(data)
-        
+
     raise Exception(f'Invalid comm type "{comm_type}"')
 
 def load_peripherals(ini_data: dict[str, dict[str, str]], all_comms: list[comm._IJ_Comm_Abstract]) -> list:
@@ -118,7 +118,7 @@ def load_peripherals(ini_data: dict[str, dict[str, str]], all_comms: list[comm._
                         break
                 if cls is None:
                     raise ImportError(f'Class not found')
-                
+
                 new_peripheral = cls.create(peripheral_sec, all_comms)
 
                 new_peripheral.identifier = peripheral_sec.get('identifier', new_peripheral.identifier)

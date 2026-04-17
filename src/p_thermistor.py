@@ -29,7 +29,7 @@ class IJP_Thermistor(IJP_Analog_Pin):
         if f == 2:
             return f"F2 peripheral ok. temperature: {self.get_value() / 100}"
         return super().handle_command(f, l, s)
-    
+
     def get_value(self) -> int:
         raw_result = super().get_value()
 

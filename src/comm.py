@@ -27,7 +27,7 @@ class IJ_Comm_Manager:
         self.console = get_console()
 
         self.core: IJ_Core = None # type: ignore
-    
+
     def start_thread(self):
         _thread.start_new_thread(self.run, ())
 
@@ -80,7 +80,7 @@ class _IJ_Comm_Abstract:
         self.send_block_after_send_time = 0
         self.send_block_while_incoming = False
         self.unblock_send_on_receive = True # Only affects time-based blocks, not while-incoming blocks if further data is coming
-        
+
         self._send_unblock_time = time.ticks_ms()
         self._receive_timeout_time = time.ticks_ms()
 
@@ -91,28 +91,28 @@ class _IJ_Comm_Abstract:
 
     def check_receive(self) -> bool:
         return len(self._receive_queue) > 0
-    
+
     def receive(self) -> str:
         if len(self._receive_queue) > 0:
             if self._receive_lock.acquire(0):
                 result = self._receive_queue.pop(0)
                 self._receive_lock.release()
                 return result
-            
+
         return ''
-        
+
     def block_send(self, duration: int | None = None):
         if duration is None:
             self._send_unblock_time = time.ticks_add(time.ticks_ms(), self.send_block_after_send_time)
         else:
             self._send_unblock_time = time.ticks_add(time.ticks_ms(), duration)
-    
+
     def update(self):
         # Update send unblock time to current time periodically to eliminate risk of overflow
         diff = time.ticks_diff(self._send_unblock_time, time.ticks_ms())
         if diff < -UNBLOCK_SEND_UPDATE_TIME:
             self._send_unblock_time = time.ticks_ms()
-        
+
         if len(self._send_queue) > 0 and diff < 0:
             if not self.send_block_while_incoming or (len(self._receive_buffer) == 0 and not self._comm_check_receive()):
                 self._send_next_queued_command()
@@ -127,9 +127,9 @@ class _IJ_Comm_Abstract:
             self._receive_buffer = []
             self._receive_lock.acquire()
             self._receive_queue.append(data)
-            self._receive_lock.release()       
+            self._receive_lock.release()
             if self.unblock_send_on_receive:
-                self._send_unblock_time = time.ticks_ms() 
+                self._send_unblock_time = time.ticks_ms()
 
     def initialize(self):
         pass
@@ -163,21 +163,21 @@ class IJ_Comm_UART(_IJ_Comm_Abstract):
             uart_instance, baudrate=baud, bits=bits, parity=parity, stop=stop_bits,
             tx=tx_pin, rx=rx_pin
             )
-        
+
     def _comm_send(self, data: bytes):
         self.uart.write(data)
         self.uart.flush()
 
     def _comm_check_receive(self) -> bool:
         return self.uart.any() > 0
-    
+
     def _comm_receive(self) -> bytes:
         result = self.uart.read()
         if result:
             return result
         else:
             return bytes()
-        
+
     @staticmethod
     def make_from_config(data: dict[str, str]):
         parity = data.get('parity', DEFAULT_UART_PARITY)
@@ -196,7 +196,7 @@ class IJ_Comm_UART(_IJ_Comm_Abstract):
             stop_bits = int(data.get('stop_bits', DEFAULT_UART_STOP_BITS))
         )
         return result
-        
+
 class IJ_Comm_UART_EN(_IJ_Comm_Abstract):
     def __init__(self, uart_instance: int, tx_pin: int, rx_pin: int, en_pin: int, en_write_state: bool = True, baud:int=115200, bits:int=8, parity:int|None=None, stop_bits:int=1):
         super().__init__()
@@ -208,7 +208,7 @@ class IJ_Comm_UART_EN(_IJ_Comm_Abstract):
         self.en_pin = Pin(en_pin, Pin.OUT, value=not en_write_state)
         self.send_block_after_send_time = DEFAULT_BLOCK_SEND_DURATION
         self.send_block_while_incoming = True
-        
+
     def _comm_send(self, data: bytes):
         self.en_pin.value(self.en_write_state)
         self.uart.write(data)
@@ -217,14 +217,14 @@ class IJ_Comm_UART_EN(_IJ_Comm_Abstract):
 
     def _comm_check_receive(self) -> bool:
         return self.uart.any() > 0
-    
+
     def _comm_receive(self) -> bytes:
         result = self.uart.read()
         if result:
             return result
         else:
             return bytes()
-        
+
     @staticmethod
     def make_from_config(data: dict[str, str]):
         parity = data.get('parity', DEFAULT_UART_PARITY)
@@ -245,7 +245,7 @@ class IJ_Comm_UART_EN(_IJ_Comm_Abstract):
             stop_bits = int(data.get('stop_bits', DEFAULT_UART_STOP_BITS))
         )
         return result
-        
+
 class IJ_Comm_UART_EN_Multi(_IJ_Comm_Abstract): # Don't use directly. Use IJ_Comm_UART_EN_Multi_Client instead
     def __init__(self, uart_instance: int, tx_pin: int, rx_pin: int, en_write_state: bool = True, baud:int=115200, bits:int=8, parity:int|None=None, stop_bits:int=1):
         super().__init__()
@@ -286,7 +286,7 @@ class IJ_Comm_UART_EN_Multi(_IJ_Comm_Abstract): # Don't use directly. Use IJ_Com
         self._send_lock.acquire()
         self._send_queue.append(data)
         self._queue_en_pins.append(en_pin)
-        self._send_lock.release()       
+        self._send_lock.release()
 
     def _send_next_queued_command(self):
         if self._send_lock.acquire(0):
@@ -295,8 +295,8 @@ class IJ_Comm_UART_EN_Multi(_IJ_Comm_Abstract): # Don't use directly. Use IJ_Com
             self._send_lock.release()
             self._comm_send(send_data.encode('utf-8'), en_pin)
             if self.send_block_after_send_time > 0:
-                self.block_send() 
-        
+                self.block_send()
+
     def _comm_send(self, data: bytes, en_pin: Pin):
         pin_bit = 1 << self.en_pin_ids[self.en_pins.index(en_pin)]
         exclude_pin_bits = self.all_pins_mask ^ pin_bit
@@ -310,7 +310,7 @@ class IJ_Comm_UART_EN_Multi(_IJ_Comm_Abstract): # Don't use directly. Use IJ_Com
 
     def _comm_check_receive(self) -> bool:
         return self.uart.any() > 0
-    
+
     def _comm_receive(self) -> bytes:
         result = self.uart.read()
         if result:
@@ -354,10 +354,10 @@ class IJ_Comm_UART_EN_Multi_Client:
 
     def check_receive(self) -> bool:
         return self.parent.check_receive()
-    
+
     def receive(self) -> str:
         return self.parent.receive()
-    
+
     def update(self):
         pass
 

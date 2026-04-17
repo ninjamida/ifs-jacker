@@ -70,7 +70,7 @@ class IJ_Console:
                     self.input_buffer = self.input_buffer[:-1]
             elif ord(char) >= 32 and ord(char) < 127:
                 self.input_buffer += char
-        
+
         return None
 
 _console = None
