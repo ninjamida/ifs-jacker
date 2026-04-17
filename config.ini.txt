@@ -9,7 +9,7 @@
 timeout=3                                 ; Default: 3. After this many seconds without communication from the printer, the "timeout" function of all peripherals will be executed.
 include_channel_count_in_status=true      ; Default: true. If true, response to F13 commands will add a "channel_count" parameter indicating how many channels the IFS Jacker can provide
 include_peripherals_in_status=true        ; Default: true. If true, response to F13 commands will include the status codes of all peripherals.
-mmu_timeout=0.05                          ; Default: 0.05. Sets how long IFS Jacker will wait for an IFS to respond to a command before timing out. (Giving up, and in the case of an F13 request, assuming all channels empty and idle.)
+mmu_timeout=0.06                          ; Default: 0.06. Sets how long IFS Jacker will wait for an IFS to respond to a command before timing out. (Giving up, and in the case of an F13 request, assuming all channels empty and idle.)
 force_present_channels=1,2                ; Default: (none). Any channels listed here will always be reported as having filament in them regardless of what the IFS says. 1-based.
 force_absent_channels=3,4                 ; Default: (none). Channels listed here will always be reported empty. If a channel is listed in both of these, absent has priority.
 

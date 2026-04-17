@@ -16,7 +16,7 @@ def load_config(core: IJ_Core, comm_mgr: comm.IJ_Comm_Manager):
         core.printer_connected_timeout = int(float(core_data.get('timeout', 3)) * 1000)
         core.include_channel_count_in_status = core_data.get('include_channel_count_in_status', 'true') == 'true'
         core.include_peripherals_in_status = core_data.get('include_peripherals_in_status', 'true') == 'true'
-        core.mmu_response_timeout = int(float(core_data.get('mmu_timeout', 0.05)) * 1000)
+        core.mmu_response_timeout = int(float(core_data.get('mmu_timeout', 0.06)) * 1000)
         force_present_channels = [item.strip() for item in core_data.get('force_present_channels', '').split(',')]
         force_absent_channels = [item.strip() for item in core_data.get('force_absent_channels', '').split(',')]
         if len(force_absent_channels) > 1 or force_absent_channels[0] != '':
