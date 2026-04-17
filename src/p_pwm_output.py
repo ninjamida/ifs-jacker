@@ -24,7 +24,7 @@ class IJP_PWM_Output(IJ_Peripheral):
         self.pin.freq(frequency)
 
         self.power_on_timeout: int | None = 0
-    
+
     def handle_command(self, f=0, l=0, s=0) -> str:
         if f == 2:
             return f"F2 peripheral ok. power: {self.pin.duty_u16()} frequency: {self.pin.freq()}"
@@ -38,10 +38,10 @@ class IJP_PWM_Output(IJ_Peripheral):
                 return f"F3 peripheral ok. power: {self.pin.duty_u16()} frequency: {self.pin.freq()}"
 
         return super().handle_command(f, l, s)
-    
+
     def get_status_code(self) -> int:
         return self.pin.duty_u16()
-    
+
     def shutdown(self):
         self.pin.duty_u16(0)
         self.pin.deinit()

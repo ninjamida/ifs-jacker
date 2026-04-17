@@ -5,7 +5,7 @@
 #  read_period - Specifies how often to sample the pin. If zero, it is sampled on-demand.
 #  sample_count - How many samples to retain (and return an average of). Only works if read_period is nonzero.
 #  sample_median - If true, the median of the samples is returned. Otherwise, the mean is returned.
-#  
+#
 # Commands:
 #  F2 (get status) - Includes "pin_state: X" in the response
 #
@@ -29,7 +29,7 @@ class IJP_Analog_Pin(IJ_Peripheral):
 
         self.next_sample_time = time.ticks_ms()
         self.is_first_update = True
-        
+
         self.report_in_F13 = True
         self.report_in_Z4 = True
 
@@ -40,7 +40,7 @@ class IJP_Analog_Pin(IJ_Peripheral):
 
     def get_status_code(self) -> int:
         return self.get_value()
-    
+
     def get_value(self) -> int:
         if self.read_delay == 0:
             return self.pin.read_u16()
@@ -53,10 +53,10 @@ class IJP_Analog_Pin(IJ_Peripheral):
             if len(sorted_samples) % 2 == 0:
                 return (sorted_samples[target_item] + sorted_samples[target_item - 1]) // 2
             else:
-                return sorted_samples[target_item]            
+                return sorted_samples[target_item]
         else:
             return int(sum(self.samples) / len(self.samples))
-        
+
     def update(self):
         if self.read_delay > 0:
             if self.is_first_update or time.ticks_diff(self.next_sample_time, time.ticks_ms()) < 0:
@@ -69,7 +69,7 @@ class IJP_Analog_Pin(IJ_Peripheral):
                     self.samples.pop(0)
                     self.samples.append(new_sample)
                     self.next_sample_time = time.ticks_add(self.next_sample_time, self.read_delay)
-    
+
     @staticmethod
     def create(config_data: dict[str, str], all_comms: list[_IJ_Comm_Abstract]):
         pin_id = int(config_data['pin'])

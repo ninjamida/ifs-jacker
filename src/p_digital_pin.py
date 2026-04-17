@@ -4,8 +4,8 @@
 #  output - Specifies if the pin is an output (true) or input (false)
 #  pin - Specifies the pin ID to use
 #  default_state - Specifies the initial state (output) or fallback state when not connected (input) of the pin
-#  
-#  
+#
+#
 # Commands:
 #  F2 (get status) - Includes "pin_state: 0" or "pin_state: 1" in the response.
 #  F3 (set state)  - Output pin only. Sets the current state of the pin (L0 low, L1 high)
@@ -31,7 +31,7 @@ class IJP_Digital_Pin(IJ_Peripheral):
             self.pin = Pin(pin_id, Pin.IN, pull=default_state)
 
         self.state_on_timeout: bool | None = False
-        
+
         self.report_in_F13 = not is_output
         self.report_in_Z4 = self.report_in_F13
 
@@ -48,11 +48,11 @@ class IJP_Digital_Pin(IJ_Peripheral):
 
     def get_status_code(self) -> int:
         return self.pin.value()
-    
+
     def timeout(self):
         if self.is_output and self.state_on_timeout is not None:
             self.pin.value(self.state_on_timeout)
-    
+
     @staticmethod
     def create(config_data: dict[str, str], all_comms: list[_IJ_Comm_Abstract]):
         is_output = config_data.get('output', 'false') == 'true'

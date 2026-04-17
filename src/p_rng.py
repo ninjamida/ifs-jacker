@@ -25,7 +25,7 @@ class IJP_RNG(IJ_Peripheral):
         self.refresh_time = time.ticks_ms()
 
         self.cached_random_value = 0
-    
+
     def update(self):
         if time.ticks_diff(self.refresh_time, time.ticks_ms()) < 0:
             self.refresh_time = time.ticks_add(time.ticks_ms(), self.refresh)
@@ -37,7 +37,7 @@ class IJP_RNG(IJ_Peripheral):
         if f == 3:
             return f'F3 peripheral ok. rng: {random.randrange(self.min, self.max + 1)}'
         return super().handle_command(f, l, s)
-    
+
     def get_status_code(self) -> int:
         return self.cached_random_value
 
@@ -47,4 +47,4 @@ class IJP_RNG(IJ_Peripheral):
         result.min = int(config_data.get('min', 0))
         result.max = int(config_data.get('max', 99))
         result.refresh = int(float(config_data.get('refresh', 1)) * 1000)
-        return result 
+        return result

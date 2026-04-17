@@ -43,13 +43,13 @@ def main():
         comm.terminate = True
     else:
         comm.finished = True
-    
+
     if core.started and not core.finished:
         console.print('Waiting for core to exit', 'info')
         core.terminate = True
     else:
         core.finished = True
-    
+
     reported_comm_finish = False
     reported_core_finish = False
     while not (reported_core_finish and reported_comm_finish):
