@@ -18,6 +18,8 @@ GPIO_OUT_SET = SIO_BASE + 0x14
 GPIO_OUT_CLR = SIO_BASE + 0x18
 
 class IJ_Comm_Manager:
+    terminate = False
+    
     def __init__(self):
         self.comm_list = []
         self.peripherals = []

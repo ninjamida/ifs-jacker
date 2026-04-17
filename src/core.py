@@ -17,6 +17,8 @@ class QueuedCommand:
         self.command = command
 
 class IJ_Core:
+    terminate = False
+
     def __init__(self):
         self.console = get_console()
 
@@ -314,6 +316,11 @@ class IJ_Core:
     def run(self):
         self.started = True
         update_peripheral_index = 0
+        while not self.comm.started:
+            pass
+        if self.printer_comm:
+            while self.printer_comm.check_receive(): 
+                self.printer_comm.receive() # Clear any that came in before core was ready
         while not self.terminate:
             try:
                 self.update_printer()
