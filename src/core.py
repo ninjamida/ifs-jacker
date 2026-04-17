@@ -120,7 +120,7 @@ class IJ_Core:
                     data += [f'software: "{SCRIPT_IDENTIFIER}"']
                     data += [f'version: "{SCRIPT_VERSION}"']
                     data += [f'author: "{SCRIPT_AUTHOR}"']
-                    data += [f'ifs_count: {len(self.mmu_comms)}']
+                    data += [f'mmu_count: {len(self.mmu_comms)}']
                     data += [f'channel_count: {len(self.mmu_comms) * 4}']
                     data += [f'peripheral_count: {len(self.peripherals)}']
                     data += [f'mmu_requests: {self.mmu_requests}']
