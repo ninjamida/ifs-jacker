@@ -95,6 +95,8 @@ class IJ_Core:
                                 peripheral.thread_lock.release()
                 self.printer_connected_timeout_expire = time.ticks_add(time.ticks_ms(), self.printer_connected_timeout)
 
+            if printer_incoming_data == 'F13\r\nF13\r\n': # Z-Mod and native screen are fighting
+                printer_incoming_data = 'F13' # We can't control who receives it, but we can make sure we just send a normal F13 response back
             in_split = printer_incoming_data.split(' ')
             f = 0
             c = 0
