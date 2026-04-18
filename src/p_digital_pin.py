@@ -53,6 +53,9 @@ class IJP_Digital_Pin(IJ_Peripheral):
         if self.is_output and self.state_on_timeout is not None:
             self.pin.value(self.state_on_timeout)
 
+    def shutdown(self):
+        self.pin.value(0)
+
     @staticmethod
     def create(config_data: dict[str, str], all_comms: list[_IJ_Comm_Abstract]):
         is_output = config_data.get('output', 'false') == 'true'

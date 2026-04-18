@@ -3,9 +3,7 @@ from util import decode_valid_bytes
 from console import get_console
 import time, machine, _thread
 
-DEFAULT_BLOCK_SEND_DURATION = int(0.2 * 1000)
 DEFAULT_INTER_CHAR_TIMEOUT = int(0.005 * 1000) # Will always allow one more iteration after last data was received regardless of timeout
-UNBLOCK_SEND_UPDATE_TIME = int(300 * 1000)
 
 DEFAULT_UART_BAUD = 115200
 DEFAULT_UART_BITS = 8
@@ -79,11 +77,8 @@ class _IJ_Comm_Abstract:
 
         self.inter_char_timeout = DEFAULT_INTER_CHAR_TIMEOUT
 
-        self.send_block_after_send_time = 0
         self.send_block_while_incoming = False
-        self.unblock_send_on_receive = True # Only affects time-based blocks, not while-incoming blocks if further data is coming
 
-        self._send_unblock_time = time.ticks_ms()
         self._receive_timeout_time = time.ticks_ms()
 
     def send(self, data: str):
@@ -103,19 +98,8 @@ class _IJ_Comm_Abstract:
 
         return ''
 
-    def block_send(self, duration: int | None = None):
-        if duration is None:
-            self._send_unblock_time = time.ticks_add(time.ticks_ms(), self.send_block_after_send_time)
-        else:
-            self._send_unblock_time = time.ticks_add(time.ticks_ms(), duration)
-
     def update(self):
-        # Update send unblock time to current time periodically to eliminate risk of overflow
-        diff = time.ticks_diff(self._send_unblock_time, time.ticks_ms())
-        if diff < -UNBLOCK_SEND_UPDATE_TIME:
-            self._send_unblock_time = time.ticks_ms()
-
-        if len(self._send_queue) > 0 and diff < 0:
+        if len(self._send_queue) > 0:
             if not self.send_block_while_incoming or (len(self._receive_buffer) == 0 and not self._comm_check_receive()):
                 self._send_next_queued_command()
 
@@ -130,8 +114,6 @@ class _IJ_Comm_Abstract:
             self._receive_lock.acquire()
             self._receive_queue.append(data)
             self._receive_lock.release()
-            if self.unblock_send_on_receive:
-                self._send_unblock_time = time.ticks_ms()
 
     def initialize(self):
         pass
@@ -144,8 +126,6 @@ class _IJ_Comm_Abstract:
             send_data = self._send_queue.pop(0)
             self._send_lock.release()
             self._comm_send(send_data.encode('utf-8'))
-            if self.send_block_after_send_time > 0:
-                self.block_send()
 
     def _comm_send(self, data: bytes):
         pass
@@ -208,7 +188,6 @@ class IJ_Comm_UART_EN(_IJ_Comm_Abstract):
             )
         self.en_write_state = en_write_state
         self.en_pin = Pin(en_pin, Pin.OUT, value=not en_write_state)
-        self.send_block_after_send_time = DEFAULT_BLOCK_SEND_DURATION
         self.send_block_while_incoming = True
 
     def _comm_send(self, data: bytes):
@@ -257,7 +236,6 @@ class IJ_Comm_UART_EN_Multi(_IJ_Comm_Abstract): # Don't use directly. Use IJ_Com
             )
         self.en_pins = []
         self.en_pin_ids = []
-        self.send_block_after_send_time = DEFAULT_BLOCK_SEND_DURATION
         self.send_block_while_incoming = True
 
         self._queue_en_pins = []
@@ -296,8 +274,6 @@ class IJ_Comm_UART_EN_Multi(_IJ_Comm_Abstract): # Don't use directly. Use IJ_Com
             en_pin = self._queue_en_pins.pop(0)
             self._send_lock.release()
             self._comm_send(send_data.encode('utf-8'), en_pin)
-            if self.send_block_after_send_time > 0:
-                self.block_send()
 
     def _comm_send(self, data: bytes, en_pin: Pin):
         pin_bit = 1 << self.en_pin_ids[self.en_pins.index(en_pin)]
@@ -368,6 +344,3 @@ class IJ_Comm_UART_EN_Multi_Client:
 
     def shutdown(self):
         pass
-
-    def block_send(self, duration: int | None = None):
-        self.parent.block_send(duration)

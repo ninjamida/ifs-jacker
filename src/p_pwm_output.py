@@ -4,6 +4,7 @@
 #  pin - The pin number to use
 #  frequency - The output frequency
 #  initial_power - The initial power level (duty cycle) to set to
+#  power_on_timeout - Power to set on printer timeout ('none' to leave unchanged - default is 0, not none!)
 #
 # Commands:
 #  F2 (get status) - Includes "power: X" in the response. This is the last set value (0 - 65535)
@@ -21,6 +22,7 @@ class IJP_PWM_Output(IJ_Peripheral):
 
         self.identifier = f'PWM Output {pin_id}'
         self.pin = PWM(Pin(pin_id), duty_u16=initial_power)
+        self.pin_id = pin_id
         self.pin.freq(frequency)
 
         self.power_on_timeout: int | None = 0
@@ -45,6 +47,7 @@ class IJP_PWM_Output(IJ_Peripheral):
     def shutdown(self):
         self.pin.duty_u16(0)
         self.pin.deinit()
+        Pin(self.pin_id, Pin.OUT, value=0)
 
     def timeout(self):
         if self.power_on_timeout is not None:
