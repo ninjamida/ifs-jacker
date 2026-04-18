@@ -22,6 +22,7 @@ class IJP_PWM_Output(IJ_Peripheral):
 
         self.identifier = f'PWM Output {pin_id}'
         self.pin = PWM(Pin(pin_id), duty_u16=initial_power)
+        self.pin_id = pin_id
         self.pin.freq(frequency)
 
         self.power_on_timeout: int | None = 0
@@ -46,6 +47,7 @@ class IJP_PWM_Output(IJ_Peripheral):
     def shutdown(self):
         self.pin.duty_u16(0)
         self.pin.deinit()
+        Pin(self.pin_id, Pin.OUT, value=0)
 
     def timeout(self):
         if self.power_on_timeout is not None:

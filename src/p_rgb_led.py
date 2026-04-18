@@ -28,6 +28,7 @@ class IJP_RGB_LED(IJ_Peripheral):
 
         self.identifier = f'RGB LED'
         self.all_pins: list[PWM | None] = []
+        self.all_pin_ids: list[int] = [] # Order / gaps don't matter for this one
         for i, pin_id in enumerate(pins):
             if pin_id is None:
                 self.all_pins.append(None)
@@ -41,6 +42,7 @@ class IJP_RGB_LED(IJ_Peripheral):
                 if frequency is None:
                     frequency = 2000
                 self.all_pins.append(PWM(Pin(pin_id), duty_u16=initial_state, freq=frequency))
+                self.all_pin_ids.append(pin_id)
 
         self.state_on_timeout: int | None = 0
 
@@ -135,6 +137,8 @@ class IJP_RGB_LED(IJ_Peripheral):
             if pin is not None:
                 pin.duty_u16(0)
                 pin.deinit()
+        for pin_id in self.all_pin_ids:
+            Pin(pin_id, Pin.OUT, value=0)
 
     def timeout(self):
         if self.state_on_timeout is not None:
