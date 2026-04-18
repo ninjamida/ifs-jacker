@@ -4,6 +4,7 @@
 #  pin - The pin number to use
 #  frequency - The output frequency
 #  initial_power - The initial power level (duty cycle) to set to
+#  power_on_timeout - Power to set on printer timeout ('none' to leave unchanged - default is 0, not none!)
 #
 # Commands:
 #  F2 (get status) - Includes "power: X" in the response. This is the last set value (0 - 65535)
