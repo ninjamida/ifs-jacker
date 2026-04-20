@@ -2,26 +2,20 @@ IFS Jacker - IFS splitter for Flashforge AD5X
 
 ***
 A huge amount of work went into this project. If you like it, please consider
-purchasing some of my paid models on Printables asa way to support my work -
+purchasing some of my paid models on Printables as a way to support my work -
 feel free to think of it as making a donation that you also get a fun model in
 return for.
 
 https://www.printables.com/@Trumble/store
 ***
 
-This is still an early version. Use at your own risk.
+At this time, IFS Jacker has had limited testing. Build and use at your own
+risk. With that being said, I've had my IFS Jacker attached to my printer for
+a couple of weeks now and all IFS functionality has worked fine.
 
-At the time of writing this, I have done a few outside-print tests, and exactly
-two test prints - one with four colors on a single IFS (but running through IFS
-Jacker, and on channels 5, 6, 7 and 8), and one eight-color print. Both of them
-completed without any IFS Jacker problems (the 8 color print did run into a few
-issues arising from the 8-in-1 adapter I was using, but ultimately was
-successful).
-
-You will need Z-Mod in order to use this. This requires a PR that has not yet
-been merged into Z-Mod at the time of writing this, so you will need to copy
-the modified files into your Z-Mod install manually:
-https://github.com/ghzserg/z_ad5x/pull/8
+In order to use an IFS Jacker, you will need to have Z-Mod, and you will need to
+be using GuppyScreen or HelixScreen (or no screen) - the native screen will not
+properly communicate with an IFS Jacker.
 
 You will also either need to set a "color_limit" param in your [zmod_ifs]
 configuration section (set it to the number of colors you have available), or
@@ -37,7 +31,11 @@ origin: https://github.com/ninjamida/ifs_jacker_plugin.git
 is_system_service: False
 primary_branch: master
 
-Once installed, run "ENABLE_PLUGIN NAME=ifs_jacker" to enable it.
+Once installed, run "ENABLE_PLUGIN NAME=ifs_jacker" to enable it. Whenever you
+update the IFS Jacker plugin, if it is enabled, you should re-run the enable
+command afterwards (you do not need to run a disable command first).
+
+---
 
 Code is written for RP2040 Zero (and by extension should be compatible with
 Raspberry Pi Pico). Compatibility with other boards is not guaranteed. It can
@@ -56,7 +54,8 @@ designed build you can use; this is powered from the AD5X itself and allows
 connecting two IFSes, optionally with a (always-on) 24V or 5V power header that
 can be used to connect a couple of rear-panel fans. The provided config.ini is
 preconfigured for this build. You will need to be able to crimp cables in order
-to use this design; soldering is not required.
+to use this design; soldering is not required. If you are using this build,
+the included config.ini file is already set up for it.
 
 https://www.printables.com/model/1644745-ifs-jacker
 
