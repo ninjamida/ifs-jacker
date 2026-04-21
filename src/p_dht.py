@@ -32,8 +32,8 @@ class IJP_DHT(IJ_Peripheral):
             return f"F2 peripheral ok. temperature: {self.temperature} humidity: {self.humidity}"
         return super().handle_command(f, l, s)
     
-    def get_status_code(self) -> int:
-        return int(self.temperature * 100)
+    def get_status_info(self) -> str:
+        return f'p{self.index}_temperature: {self.temperature} p{self.index}_humidity: {self.humidity}'
     
     def update(self):
         if time.ticks_diff(self.delay_timeout, time.ticks_ms()) < 0:

@@ -139,7 +139,7 @@ class IJ_Core:
                     data = ['Z4 ok.']
                     for i, peripheral in enumerate(self.peripherals):
                         if peripheral.report_in_Z4 or f != 0:
-                            data += [f'peripheral_{i}: {peripheral.get_status_code()}']
+                            data += [peripheral.get_status_info()]
                     self.send_printer(' '.join(data))
 
                 if z == 5:
@@ -302,7 +302,7 @@ class IJ_Core:
                     if peripheral.use_primary_thread and peripheral.auto_thread_lock:
                         peripheral.thread_lock.acquire()
                     try:
-                        out_text += [f'peripheral_{i}: {peripheral.get_status_code()}']
+                        out_text += [peripheral.get_status_info()]
                     finally:
                         if peripheral.use_primary_thread and peripheral.auto_thread_lock:
                             peripheral.thread_lock.release()

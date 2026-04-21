@@ -128,9 +128,15 @@ class IJP_RGB_LED(IJ_Peripheral):
             else:
                 result <<= 8
         return result
-
-    def get_status_code(self) -> int:
-        return self.get_state_packed()
+    
+    def get_status_info(self) -> str:
+        elements = []
+        for i, pin in enumerate(self.all_pins):
+            if pin:
+                elements.append(f'{COLOR_NAMES[i]}: {int(pin.duty_u16() * 255 / 65535)}')
+            else:
+                elements.append(f'{COLOR_NAMES[i]}: 0')
+        return ' '.join(f'p{self.index}_{element}' for element in elements)
 
     def shutdown(self):
         for pin in self.all_pins:

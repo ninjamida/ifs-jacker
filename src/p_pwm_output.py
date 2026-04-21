@@ -41,8 +41,8 @@ class IJP_PWM_Output(IJ_Peripheral):
 
         return super().handle_command(f, l, s)
 
-    def get_status_code(self) -> int:
-        return self.pin.duty_u16()
+    def get_status_info(self) -> str:
+        return f'p{self.index}_power: {self.pin.duty_u16()}'
 
     def shutdown(self):
         self.pin.duty_u16(0)

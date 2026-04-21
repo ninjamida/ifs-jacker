@@ -37,6 +37,9 @@ class IJP_Thermistor(IJP_Analog_Pin):
         result = math.log(result / self.r0_value) / self.beta
         result += 1.0 / self.t0_value
         return int(((1.0 / result) - 273.15) * 100)
+    
+    def get_status_info(self) -> str:
+        return f'p{self.index}_temperature: {self.get_value() / 100}'
 
     @staticmethod
     def create(config_data: dict[str, str], all_comms: list[_IJ_Comm_Abstract]):

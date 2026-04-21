@@ -25,8 +25,9 @@ class IJ_Peripheral:
         self.auto_thread_lock = True
         self.thread_lock = _thread.allocate_lock()
         self.identifier = 'Unknown Peripheral'
-        self.report_in_F13 = False
-        self.report_in_Z4 = False
+        self.report_in_F13 = True
+        self.report_in_Z4 = True
+        self.index = -1
 
     def update(self): # Runs frequently while idle.
         pass
@@ -51,5 +52,5 @@ class IJ_Peripheral:
 
         return f'F{f} peripheral ok. Unknown command'
 
-    def get_status_code(self) -> int:
-        return 0
+    def get_status_info(self) -> str:
+        return ''

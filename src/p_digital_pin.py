@@ -32,9 +32,6 @@ class IJP_Digital_Pin(IJ_Peripheral):
 
         self.state_on_timeout: bool | None = False
 
-        self.report_in_F13 = not is_output
-        self.report_in_Z4 = self.report_in_F13
-
     def handle_command(self, f=0, l=0, s=0) -> str:
         if f == 2:
             return f"F2 peripheral ok. pin_state: {self.pin.value()}"
@@ -45,9 +42,9 @@ class IJP_Digital_Pin(IJ_Peripheral):
             else:
                 return "F3 peripheral ok. Cannot set input pin"
         return super().handle_command(f, l, s)
-
-    def get_status_code(self) -> int:
-        return self.pin.value()
+    
+    def get_status_info(self) -> str:
+        return f'p{self.index}_state: {self.pin.value()}'
 
     def timeout(self):
         if self.is_output and self.state_on_timeout is not None:

@@ -30,16 +30,13 @@ class IJP_Analog_Pin(IJ_Peripheral):
         self.next_sample_time = time.ticks_ms()
         self.is_first_update = True
 
-        self.report_in_F13 = True
-        self.report_in_Z4 = True
-
     def handle_command(self, f=0, l=0, s=0) -> str:
         if f == 2:
             return f"F2 peripheral ok. pin_state: {self.get_value()}"
         return super().handle_command(f, l, s)
-
-    def get_status_code(self) -> int:
-        return self.get_value()
+    
+    def get_status_info(self) -> str:
+        return f'p{self.index}_value: {self.get_value()}'
 
     def get_value(self) -> int:
         if self.read_delay == 0:

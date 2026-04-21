@@ -37,9 +37,9 @@ class IJP_RNG(IJ_Peripheral):
         if f == 3:
             return f'F3 peripheral ok. rng: {random.randrange(self.min, self.max + 1)}'
         return super().handle_command(f, l, s)
-
-    def get_status_code(self) -> int:
-        return self.cached_random_value
+    
+    def get_status_info(self) -> str:
+        return f'p{self.index}_value: f{self.cached_random_value}'
 
     @staticmethod
     def create(config_data: dict[str, str], all_comms: list[_IJ_Comm_Abstract]):

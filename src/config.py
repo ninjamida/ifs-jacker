@@ -126,6 +126,8 @@ def load_peripherals(ini_data: dict[str, dict[str, str]], all_comms: list[comm._
                 new_peripheral.report_in_F13 = (peripheral_sec.get('report_f13', 'true' if new_peripheral.report_in_F13 else 'false') == 'true')
                 new_peripheral.report_in_Z4 = (peripheral_sec.get('report_z4', 'true' if new_peripheral.report_in_F13 else 'false') == 'true')
 
+                new_peripheral.index = i
+
                 result.append(new_peripheral)
             except:
                 new_peripheral = IJP_Dummy()
