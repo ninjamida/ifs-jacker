@@ -307,7 +307,7 @@ class IJ_Core:
                         if peripheral.use_primary_thread and peripheral.auto_thread_lock:
                             peripheral.thread_lock.release()
 
-        out_text += ['jinsi_GCONF: 000001dc qiehuan_GCONF: 000001dc']
+        #out_text += ['jinsi_GCONF: 000001dc qiehuan_GCONF: 000001dc'] # Z-Mod doesn't actually use these, so removed them
 
         self.send_printer(' '.join(out_text))
 
