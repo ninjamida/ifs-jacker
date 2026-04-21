@@ -27,13 +27,13 @@ class IJP_DHT(IJ_Peripheral):
 
         self.prev_reading_error = False
 
-    def handle_command(self, f=0, l=0, s=0) -> str:
+    def handle_command(self, f=0, l=0, s=0, params=[]) -> str:
         if f == 2:
             return f"F2 peripheral ok. temperature: {self.temperature} humidity: {self.humidity}"
-        return super().handle_command(f, l, s)
+        return super().handle_command(f, l, s, params)
     
     def get_status_info(self) -> str:
-        return f'p{self.index}_temperature: {self.temperature} p{self.index}_humidity: {self.humidity}'
+        return f'{self.short_identifier}_temperature: {self.temperature} {self.short_identifier}_humidity: {self.humidity}'
     
     def update(self):
         if time.ticks_diff(self.delay_timeout, time.ticks_ms()) < 0:

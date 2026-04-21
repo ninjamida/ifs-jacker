@@ -46,7 +46,7 @@ class IJP_RGB_LED(IJ_Peripheral):
 
         self.state_on_timeout: int | None = 0
 
-    def handle_command(self, f=0, l=0, s=0) -> str:
+    def handle_command(self, f=0, l=0, s=0, params=[]) -> str:
         if f == 2:
             elements = ['F2 peripheral ok.']
 
@@ -111,7 +111,7 @@ class IJP_RGB_LED(IJ_Peripheral):
             return ' '.join(elements)
             
 
-        return super().handle_command(f, l, s)
+        return super().handle_command(f, l, s, params)
     
     def set_state_from_packed(self, packed_state: int):
         for i in range(4):
@@ -136,7 +136,7 @@ class IJP_RGB_LED(IJ_Peripheral):
                 elements.append(f'{COLOR_NAMES[i]}: {int(pin.duty_u16() * 255 / 65535)}')
             else:
                 elements.append(f'{COLOR_NAMES[i]}: 0')
-        return ' '.join(f'p{self.index}_{element}' for element in elements)
+        return ' '.join(f'{self.short_identifier}_{element}' for element in elements)
 
     def shutdown(self):
         for pin in self.all_pins:

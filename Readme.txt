@@ -96,6 +96,10 @@ A few extra commands are also available. Sample responses are also provided. Any
 newlines in these responses are purely for readability; responses are sent as a
 single line of text.
 
+Although most of these commands are not order-sensitive in terms of parameters,
+for best practice, always put the params in the order Z C F L S, and put all of
+those before any custom Z5 params or text-based params (eg. Z6).
+
 Z1 - This command does nothing but respond. It can be used to confirm the
      presence of an IFS Jacker. Z2 can then be used to get more info. (Of course
      you could also just directly use Z2; but Z1 was implemented earlier.)
@@ -117,6 +121,11 @@ Z4 - Get the status codes of all peripherals.
 Z5 - Send a command to a peripheral. F, C, L and S params are passed on.
  Response: Z5 ok. F3 peripheral ok. Pin set high
        or: Z5 ok. Invalid peripheral index 5
+       
+Z6 - Configures a peripheral. Uses text-based parameters, same as key/value
+     pairs in the INI file but space-seperated instead of newline-seperated.
+ Response: Z6 ok. Peripheral p1 configured, index 1
+       or: Z6 ok. Failed
      
 Z99 - This causes the IFS Jacker software to terminate (and the RP2040 to return
       to the MicroPython REPL interface).

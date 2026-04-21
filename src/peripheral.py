@@ -1,4 +1,5 @@
 import _thread
+import comm
 
 # Peripheral code should follow the following naming conventions, using "example" as an example name:
 #  File name: p_example.py [must be lowercase]
@@ -14,6 +15,10 @@ import _thread
 #  L and S are open-purpose and can be used as you see fit. L should be considered the "primary" one (used
 #  if only one is needed, etc).
 #  C is not available, as it is used by Z5 (send command to peripheral) to indicate which peripheral to use.
+#  Custom parameters can also be used, but must be manually processed from the "params" param. Custom params
+#  can be anything you want (but to keep convention should be a single letter plus a number if possible), but
+#  must not begin with an uppercase Z, F, C, L or S, and must not contain spaces (including in the value).
+#
 #  Responses to commands should begin with (using F1 for example) "F1 peripheral ok."
 #
 #  Do not rely on default parameter values in handle_command's definition; as it may be called with 0
@@ -27,7 +32,7 @@ class IJ_Peripheral:
         self.identifier = 'Unknown Peripheral'
         self.report_in_F13 = True
         self.report_in_Z4 = True
-        self.index = -1
+        self.short_identifier = '?'
 
     def update(self): # Runs frequently while idle.
         pass
@@ -44,7 +49,7 @@ class IJ_Peripheral:
     def activate(self): # Runs when the connection to the printer becomes active (at first startup or reconnecting after a timeout)
         pass
 
-    def handle_command(self, f=0, l=0, s=0) -> str:
+    def handle_command(self, f=0, l=0, s=0, params=[]) -> str:
         if f == 1:
             return 'F1 peripheral ok. f{self.identifier}'
         if f == 2:
@@ -54,3 +59,25 @@ class IJ_Peripheral:
 
     def get_status_info(self) -> str:
         return ''
+
+def load_peripheral(peripheral_index: int, config_data: dict[str, str], all_comms: list[comm._IJ_Comm_Abstract]) -> IJ_Peripheral:
+    peripheral_type = config_data['type']
+    module = __import__(f'p_{peripheral_type}')
+    cls = None
+    for attr in dir(module):
+        if attr.lower() == f'ijp_{peripheral_type}':
+            cls = getattr(module, attr)
+            break
+    if cls is None:
+        raise ImportError(f'Class not found')
+
+    new_peripheral = cls.create(config_data, all_comms)
+
+    new_peripheral.identifier = config_data.get('identifier', new_peripheral.identifier)
+
+    new_peripheral.report_in_F13 = (config_data.get('report_f13', 'true' if new_peripheral.report_in_F13 else 'false') == 'true')
+    new_peripheral.report_in_Z4 = (config_data.get('report_z4', 'true' if new_peripheral.report_in_F13 else 'false') == 'true')
+
+    new_peripheral.short_identifier = config_data.get('short_identifier', f'p{peripheral_index}')
+
+    return new_peripheral

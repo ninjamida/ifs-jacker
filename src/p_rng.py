@@ -31,15 +31,15 @@ class IJP_RNG(IJ_Peripheral):
             self.refresh_time = time.ticks_add(time.ticks_ms(), self.refresh)
             self.cached_random_value = random.randrange(self.min, self.max + 1)
 
-    def handle_command(self, f=0, l=0, s=0) -> str:
+    def handle_command(self, f=0, l=0, s=0, params=[]) -> str:
         if f == 2:
             return f"F2 peripheral ok. last_rng: {self.cached_random_value}"
         if f == 3:
             return f'F3 peripheral ok. rng: {random.randrange(self.min, self.max + 1)}'
-        return super().handle_command(f, l, s)
+        return super().handle_command(f, l, s, params)
     
     def get_status_info(self) -> str:
-        return f'p{self.index}_value: f{self.cached_random_value}'
+        return f'{self.short_identifier}_value: f{self.cached_random_value}'
 
     @staticmethod
     def create(config_data: dict[str, str], all_comms: list[_IJ_Comm_Abstract]):

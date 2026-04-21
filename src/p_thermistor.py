@@ -25,10 +25,10 @@ class IJP_Thermistor(IJP_Analog_Pin):
         self.rf_value = 100000
         self.identifier = f'Thermistor {pin_id}'
 
-    def handle_command(self, f=0, l=0, s=0) -> str:
+    def handle_command(self, f=0, l=0, s=0, params=[]) -> str:
         if f == 2:
             return f"F2 peripheral ok. temperature: {self.get_value() / 100}"
-        return super().handle_command(f, l, s)
+        return super().handle_command(f, l, s, params)
 
     def get_value(self) -> int:
         raw_result = super().get_value()
@@ -39,7 +39,7 @@ class IJP_Thermistor(IJP_Analog_Pin):
         return int(((1.0 / result) - 273.15) * 100)
     
     def get_status_info(self) -> str:
-        return f'p{self.index}_temperature: {self.get_value() / 100}'
+        return f'{self.short_identifier}_temperature: {self.get_value() / 100}'
 
     @staticmethod
     def create(config_data: dict[str, str], all_comms: list[_IJ_Comm_Abstract]):

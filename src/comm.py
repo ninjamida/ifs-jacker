@@ -28,8 +28,16 @@ class IJ_Comm_Manager:
 
         self.core: IJ_Core = None # type: ignore
 
+        self.new_peripherals = []
+        self.new_peripheral_lock = _thread.allocate_lock()
+
     def start_thread(self):
         _thread.start_new_thread(self.run, ())
+
+    def add_peripheral(self, peripheral):
+        self.new_peripheral_lock.acquire()
+        self.new_peripherals.append(peripheral)
+        self.new_peripheral_lock.release()
 
     def run(self):
         self.started = True
@@ -44,6 +52,12 @@ class IJ_Comm_Manager:
                     else:
                         self.comm_list[update_comm_index].update()
                         update_comm_index += 1
+
+                if len(self.new_peripherals) > 0:
+                    self.new_peripheral_lock.acquire()
+                    self.peripherals += self.new_peripherals
+                    self.new_peripherals = []
+                    self.new_peripheral_lock.release()
 
                 if len(self.peripherals) > 0:
                     if update_peripheral_index >= len(self.peripherals):

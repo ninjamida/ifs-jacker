@@ -2,6 +2,7 @@ from util import load_ini_file
 from console import get_console
 from core import IJ_Core
 from p_dummy import IJP_Dummy
+from peripheral import load_peripheral
 import comm, gc
 
 STANDARD_COMM_GENERATION_TYPES = [comm.IJ_Comm_UART, comm.IJ_Comm_UART_EN]
@@ -67,8 +68,8 @@ def load_config(core: IJ_Core, comm_mgr: comm.IJ_Comm_Manager):
         comm_mgr.comm_list = all_comms
 
         peripherals = load_peripherals(ini_data, all_comms)
-        core.peripherals = peripherals
-        comm_mgr.peripherals = peripherals
+        core.peripherals = peripherals.copy()
+        comm_mgr.peripherals = peripherals # No need to create two copies, one can have the original
 
         for this_comm in all_comms:
             this_comm.initialize()
@@ -109,24 +110,7 @@ def load_peripherals(ini_data: dict[str, dict[str, str]], all_comms: list[comm._
         if f'peripheral_{i}' in ini_data:
             try:
                 peripheral_sec = ini_data[f'peripheral_{i}']
-                peripheral_type = peripheral_sec['type']
-                module = __import__(f'p_{peripheral_type}')
-                cls = None
-                for attr in dir(module):
-                    if attr.lower() == f'ijp_{peripheral_type}':
-                        cls = getattr(module, attr)
-                        break
-                if cls is None:
-                    raise ImportError(f'Class not found')
-
-                new_peripheral = cls.create(peripheral_sec, all_comms)
-
-                new_peripheral.identifier = peripheral_sec.get('identifier', new_peripheral.identifier)
-
-                new_peripheral.report_in_F13 = (peripheral_sec.get('report_f13', 'true' if new_peripheral.report_in_F13 else 'false') == 'true')
-                new_peripheral.report_in_Z4 = (peripheral_sec.get('report_z4', 'true' if new_peripheral.report_in_F13 else 'false') == 'true')
-
-                new_peripheral.index = i
+                new_peripheral = load_peripheral(i, peripheral_sec, all_comms)
 
                 result.append(new_peripheral)
             except:
@@ -134,6 +118,8 @@ def load_peripherals(ini_data: dict[str, dict[str, str]], all_comms: list[comm._
                 new_peripheral.identifier = "Failed to load"
                 result.append(new_peripheral)
         else:
-            result.append(IJP_Dummy())
+            new_peripheral = IJP_Dummy()
+            new_peripheral.identifier = "Placeholder dummy"
+            result.append(new_peripheral)
 
     return result
