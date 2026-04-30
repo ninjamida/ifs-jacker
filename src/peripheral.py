@@ -78,6 +78,6 @@ def load_peripheral(peripheral_index: int, config_data: dict[str, str], all_comm
     new_peripheral.report_in_F13 = (config_data.get('report_f13', 'true' if new_peripheral.report_in_F13 else 'false') == 'true')
     new_peripheral.report_in_Z4 = (config_data.get('report_z4', 'true' if new_peripheral.report_in_F13 else 'false') == 'true')
 
-    new_peripheral.short_identifier = config_data.get('short_identifier', f'p{peripheral_index}')
+    new_peripheral.short_identifier = f'p{peripheral_index}'
 
     return new_peripheral

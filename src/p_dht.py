@@ -18,6 +18,9 @@ import time
 class IJP_DHT(IJ_Peripheral):
     def __init__(self, sensor: DHT11 | DHT22):
         super().__init__()
+
+        self.identifier = 'DHT'
+
         self.sensor = sensor
         self.temperature = 0.0
         self.humidity = 0.0

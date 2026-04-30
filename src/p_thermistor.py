@@ -31,7 +31,7 @@ class IJP_Thermistor(IJP_Analog_Pin):
         return super().handle_command(f, l, s, params)
 
     def get_value(self) -> int:
-        raw_result = super().get_value()
+        raw_result = min(65534, max(super().get_value(), 2)) # Clamped to avoid potential divide by zero errors
 
         result = self.rf_value / (65535 / raw_result - 1)
         result = math.log(result / self.r0_value) / self.beta

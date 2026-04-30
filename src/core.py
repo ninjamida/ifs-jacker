@@ -204,7 +204,7 @@ class IJ_Core:
                 new_peripheral = load_peripheral(new_index, config, self.comm.comm_list)
                 self.peripherals.append(new_peripheral)
                 self.comm.add_peripheral(new_peripheral)
-                self.send_printer(f'Z6 ok. Peripheral {new_peripheral.short_identifier} added, index {new_index}')
+                self.send_printer(f'Z6 ok. Peripheral {new_index} added')
             except:
                 self.send_printer('Z6 ok. Failed')
 
