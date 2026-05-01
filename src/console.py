@@ -52,10 +52,13 @@ class IJ_Console:
             self.lock.release()
 
     def flush(self):
-        self.lock.acquire()
-        while len(self.queue) > 0:
-            print(self.queue.pop(0))
-        self.lock.release()
+        if len(self.queue) > 0:
+            self.lock.acquire()
+            try:
+                print('\n'.join(self.queue))
+                self.queue.clear()
+            finally:
+                self.lock.release()
 
     def get_input(self) -> str | None:
         while self.poller.poll(0):

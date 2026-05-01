@@ -255,6 +255,7 @@ class IJ_Core:
             if self.sent_timeout and time.ticks_diff(self.sent_timeout, time.ticks_ms()) < 0:
                 self.sent_timeout = None
                 self.mmu_timeouts += 1
+                self.console.print(f'Timeout awaiting MMU response (handling {self.sent_response_handling})', 'error')
                 if self.sent_response_handling == QCR_F13:
                     self.update_cached_F13_data('', self.sent_target_mmu)
 
