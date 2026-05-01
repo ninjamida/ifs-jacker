@@ -1,11 +1,9 @@
-import _thread, time, sys, uselect
+import time, sys, uselect
 from util import get_traceback_string
 
 class IJ_Console:
     def __init__(self) -> None:
         self.queue = []
-        self.lock = _thread.allocate_lock()
-        self._long_lock = False
 
         self.poller = uselect.poll()
         self.poller.register(sys.stdin, uselect.POLLIN)
@@ -25,40 +23,20 @@ class IJ_Console:
 
     def print(self, message: str, category: str):
         if self.check_category(category):
-            if not self._long_lock:
-                self.lock.acquire()
             self.queue.append(f'{time.ticks_ms():0{10}d}   {message}')
-            if not self._long_lock:
-                self.lock.release()
 
     def print_exception(self, e: Exception, origin: str | None = None):
-        self.begin_print('error')
         if origin:
             self.print(f'{e.__class__.__name__} occurred in {origin}', 'error')
         else:
             self.print(f'{e.__class__.__name__} occurred', 'error')
         for line in get_traceback_string(e):
             self.print(line, 'error')
-        self.end_print()
-
-    def begin_print(self, category: str = ''):
-        if self.check_category(category):
-            self.lock.acquire()
-            self._long_lock = True
-
-    def end_print(self):
-        if self._long_lock:
-            self._long_lock = False
-            self.lock.release()
 
     def flush(self):
         if len(self.queue) > 0:
-            self.lock.acquire()
-            try:
-                print('\n'.join(self.queue))
-                self.queue.clear()
-            finally:
-                self.lock.release()
+            print('\n'.join(self.queue))
+            self.queue.clear()
 
     def get_input(self) -> str | None:
         while self.poller.poll(0):

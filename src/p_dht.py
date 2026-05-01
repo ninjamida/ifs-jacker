@@ -11,22 +11,26 @@
 
 from peripheral import IJ_Peripheral
 from machine import Pin
-from dht import DHT11, DHT22
 from comm import _IJ_Comm_Abstract
+from PicoDHT22 import PicoDHT22
 import time
+from console import get_console
 
 class IJP_DHT(IJ_Peripheral):
-    def __init__(self, sensor: DHT11 | DHT22):
+    def __init__(self, pin_id: int, smID: int, is_dht11: bool):
         super().__init__()
 
-        self.identifier = 'DHT'
+        self.identifier = 'DHT11' if is_dht11 else 'DHT22'
 
-        self.sensor = sensor
+        self.pin = Pin(pin_id, Pin.IN, Pin.PULL_UP)
+        self.pio_index = smID
+        self.sensor = PicoDHT22(self.pin, dht11=is_dht11, smID=self.pio_index)
+
         self.temperature = 0.0
         self.humidity = 0.0
 
         self.reading_delay = 2 * 1000
-        self.delay_timeout = time.ticks_ms()
+        self.delay_timeout = time.ticks_ms() + self.reading_delay
 
         self.prev_reading_error = False
 
@@ -41,27 +45,30 @@ class IJP_DHT(IJ_Peripheral):
     def update(self):
         if time.ticks_diff(self.delay_timeout, time.ticks_ms()) < 0:
             try:
-                self.sensor.measure()
-
-                self.temperature = self.sensor.temperature()
-                self.humidity = self.sensor.humidity()
-
-                self.prev_reading_error = False
+                temp, humidity = self.sensor.read()
+                if temp is None:
+                    self.handle_error_data()
+                else:
+                    self.temperature = temp
+                    self.humidity = humidity
             except:
-                if self.prev_reading_error:
-                    self.temperature = 0.0
-                    self.humidity = 0.0
+                self.handle_error_data()
 
             self.delay_timeout = time.ticks_add(time.ticks_ms(), self.reading_delay)
+
+    def handle_error_data(self):
+        if self.prev_reading_error:
+            self.temperature = -1.0
+            self.humidity = -1.0
+        else:
+            self.prev_reading_error = True
 
     @staticmethod
     def create(config_data: dict[str, str], all_comms: list[_IJ_Comm_Abstract]):
         pin_id = int(config_data['pin'])
-        if config_data.get('kind', 'dht11') == 'dht22':
-            sensor = DHT22(Pin(pin_id))
-        else:
-            sensor = DHT11(Pin(pin_id))
-        result = IJP_DHT(sensor)
+        sm_id = int(config_data['pio'])
+        kind = config_data.get('kind', 'dht11')
+        result = IJP_DHT(pin_id, sm_id, kind != 'dht22')
         read_period = float(config_data.get('read_period', 2))
         result.reading_delay = int(read_period * 1000)
         return result

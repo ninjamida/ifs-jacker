@@ -7,6 +7,10 @@ as defined by the PolyForm Internal Use License 1.0.0.
 https://polyformproject.org/licenses/noncommercial/1.0.0/
 https://polyformproject.org/licenses/internal-use/1.0.0/
 
+Some code is taken from other sources, under other licences:
+- PicoDHT22.py by danjperron (MIT Licence)
+    https://github.com/danjperron/PicoDHT22/tree/main
+
 ---
 
 Acceptance

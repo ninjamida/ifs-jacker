@@ -1,4 +1,3 @@
-import _thread
 import comm
 
 # Peripheral code should follow the following naming conventions, using "example" as an example name:
@@ -26,9 +25,6 @@ import comm
 
 class IJ_Peripheral:
     def __init__(self):
-        self.use_primary_thread = False
-        self.auto_thread_lock = True
-        self.thread_lock = _thread.allocate_lock()
         self.identifier = 'Unknown Peripheral'
         self.report_in_F13 = True
         self.report_in_Z4 = True
@@ -37,10 +33,10 @@ class IJ_Peripheral:
     def update(self): # Runs frequently while idle.
         pass
 
-    def initialize(self): # Runs once. Thread safety isn't needed here as only one thread is active when this is called.
+    def initialize(self): # Runs once.
         pass
 
-    def shutdown(self): # Runs when IFS Jacker is shutting down. Thread safety is still needed.
+    def shutdown(self): # Runs when IFS Jacker is shutting down.
         pass
 
     def timeout(self): # Runs if the connection to the printer times out.
