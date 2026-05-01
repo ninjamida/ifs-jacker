@@ -81,7 +81,9 @@ third-party cables, ensure that the pins connect as expected - while the voltage
 Bambu), the data lines may be inverted on some cables. This can be handled
 simply by crossing the A / B lines where they connect to the RS485 converter. If
 you are mounting one IFS on each side of your AD5X, I strongly recommend getting
-or making a longer cable (75cm to 1m) for the IFS on the left side.
+or making a longer cable (75cm to 1m) for the IFS on the left side - and beware
+that depending on the filament path, you may encounter issues with loading
+channels 1 and 2 on the left side.
 
 ---
 
@@ -113,8 +115,8 @@ Z3 - Get the identifiers of all peripherals.
  Response: Z3 ok. peripheral_0: "Digital Pin 12 Input" peripheral_1: "Dummy"
      If there are no peripherals, it will just respond "Z3 ok."
      
-Z4 - Get the status codes of all peripherals.
- Response: Z4 ok. peripheral_0: 1
+Z4 - Get the status data of all peripherals.
+ Response: Z4 ok. p0_temperature: 17.38 p1_power: 32768
      If there are no peripherals, or all peripherals are configured not to
      report in Z4, it will just respond "Z4 ok."
      
