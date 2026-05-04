@@ -15,9 +15,7 @@ SIO_BASE = 0xd0000000
 GPIO_OUT_SET = SIO_BASE + 0x14
 GPIO_OUT_CLR = SIO_BASE + 0x18
 
-class IJ_Comm_Manager:
-    terminate = False
-    
+class IJ_Comm_Manager:    
     def __init__(self):
         self.comm_list = []
         self.console = get_console()
@@ -27,9 +25,9 @@ class IJ_Comm_Manager:
     def update(self):
         try:
             for comm in self.comm_list:
-                comm.update()                
+                comm.update()
         except KeyboardInterrupt:
-            self.terminate = True
+            raise        
         except Exception as e:
             self.console.print_exception(e, 'comms')
 
@@ -37,9 +35,10 @@ class IJ_Comm_Manager:
         for comm_interface in self.comm_list:
             try:
                 comm_interface.shutdown()
+            except KeyboardInterrupt:
+                raise        
             except Exception as e:
                 self.console.print_exception(e)
-        self.finished = True
 
 class _IJ_Comm_Abstract:
     def __init__(self):

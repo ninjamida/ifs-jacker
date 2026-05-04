@@ -27,10 +27,11 @@ def main():
 
         console.print('Starting core', 'info')
         console.flush()
-        core.run()
+        core.run()    
     except Exception as e:
-        console.print_exception(e, 'startup')
-        console.flush()
+        if not isinstance(e, KeyboardInterrupt):
+            console.print_exception(e, 'startup')
+            console.flush()
 
     console.print('IFS Jacker terminated', 'info')
     console.flush()

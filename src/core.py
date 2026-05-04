@@ -344,10 +344,14 @@ class IJ_Core:
         for peripheral in self.peripherals:
             try:
                 peripheral.shutdown()
+            except KeyboardInterrupt:
+                raise        
             except Exception as e:
                 self.console.print_exception(e, 'Peripheral shutdown')
 
         try:
             self.comm.close_comms()
+        except KeyboardInterrupt:
+            raise        
         except Exception as e:
             self.console.print_exception(e, 'Comm shutdown')

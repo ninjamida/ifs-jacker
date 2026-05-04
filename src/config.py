@@ -112,6 +112,8 @@ def load_peripherals(ini_data: dict[str, dict[str, str]], all_comms: list[comm._
                 new_peripheral = load_peripheral(i, peripheral_sec, all_comms)
 
                 result.append(new_peripheral)
+            except KeyboardInterrupt:
+                raise        
             except Exception as e:
                 new_peripheral = IJP_Dummy()
                 new_peripheral.identifier = "Failed to load"
