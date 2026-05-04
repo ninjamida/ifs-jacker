@@ -1,6 +1,6 @@
-import _thread, re, time
+import re, time
 from comm import _IJ_Comm_Abstract, IJ_Comm_Manager
-from peripheral import IJ_Peripheral
+from peripheral import IJ_Peripheral, load_peripheral
 from console import get_console
 from util import SCRIPT_IDENTIFIER, SCRIPT_VERSION, SCRIPT_AUTHOR
 
@@ -21,10 +21,6 @@ class IJ_Core:
 
     def __init__(self):
         self.console = get_console()
-
-        self.started = False
-        self.terminate = False
-        self.finished = False
 
         self.comm: IJ_Comm_Manager = None # type: ignore
 
@@ -63,9 +59,6 @@ class IJ_Core:
         self.include_channel_count_in_status = True
         self.include_peripherals_in_status = True
 
-    def start_thread(self):
-        _thread.start_new_thread(self.run, ())
-
     def send_printer(self, data: str):
         if self.printer_comm:
             self.printer_comm.send(data)
@@ -86,13 +79,7 @@ class IJ_Core:
                 if self.printer_connected_timeout_expire is None:
                     self.console.print('Printer connected', 'info')
                     for peripheral in self.peripherals:
-                        if peripheral.use_primary_thread and peripheral.auto_thread_lock:
-                            peripheral.thread_lock.acquire()
-                        try:
-                            peripheral.activate()
-                        finally:
-                            if peripheral.use_primary_thread and peripheral.auto_thread_lock:
-                                peripheral.thread_lock.release()
+                        peripheral.activate()
                 self.printer_connected_timeout_expire = time.ticks_add(time.ticks_ms(), self.printer_connected_timeout)
 
             if printer_incoming_data == 'F13\r\nF13\r\n': # Z-Mod and native screen are fighting
@@ -106,59 +93,18 @@ class IJ_Core:
             mmu = self.active_mmu_id
             for element in in_split:
                 if len(element) > 1:
-                    param = element[0]
-                    if param == 'F': f = int(element[1:])
-                    if param == 'C': c = int(element[1:])
-                    if param == 'S': s = int(element[1:])
-                    if param == 'L': l = int(element[1:])
-                    if param == 'Z': z = int(element[1:])
+                    try:
+                        param = element[0]
+                        if param == 'F': f = int(element[1:])
+                        if param == 'C': c = int(element[1:])
+                        if param == 'S': s = int(element[1:])
+                        if param == 'L': l = int(element[1:])
+                        if param == 'Z': z = int(element[1:])
+                    except:
+                        pass
 
             if z > 0:
-                if z == 1:
-                    self.send_printer('Z1 ok.')
-
-                if z == 2:
-                    data = ['Z2 ok.']
-                    data += [f'software: "{SCRIPT_IDENTIFIER}"']
-                    data += [f'version: "{SCRIPT_VERSION}"']
-                    data += [f'author: "{SCRIPT_AUTHOR}"']
-                    data += [f'mmu_count: {len(self.mmu_comms)}']
-                    data += [f'channel_count: {len(self.mmu_comms) * 4}']
-                    data += [f'peripheral_count: {len(self.peripherals)}']
-                    data += [f'mmu_requests: {self.mmu_requests}']
-                    data += [f'mmu_timeouts: {self.mmu_timeouts}']
-                    self.send_printer(' '.join(data))
-
-                if z == 3:
-                    data = ['Z3 ok.']
-                    for i, peripheral in enumerate(self.peripherals):
-                        data += [f'peripheral_{i}: "{peripheral.identifier}"']
-                    self.send_printer(' '.join(data))
-
-                if z == 4:
-                    data = ['Z4 ok.']
-                    for i, peripheral in enumerate(self.peripherals):
-                        if peripheral.report_in_Z4 or f != 0:
-                            data += [f'peripheral_{i}: {peripheral.get_status_code()}']
-                    self.send_printer(' '.join(data))
-
-                if z == 5:
-                    if c >= 0 and c < len(self.peripherals):
-                        peripheral = self.peripherals[c]
-                        if peripheral.use_primary_thread and peripheral.auto_thread_lock:
-                            peripheral.thread_lock.acquire()
-                        try:
-                            result = self.peripherals[c].handle_command(f, l, s)
-                            self.send_printer(f'Z5 ok. {result}')
-                        finally:
-                            if peripheral.use_primary_thread and peripheral.auto_thread_lock:
-                                peripheral.thread_lock.release()
-                    else:
-                        self.send_printer(f'Z5 ok. Invalid peripheral index {c}')
-
-                if z == 99:
-                    self.terminate = True
-                    self.send_printer('Z99 ok. Terminating')
+                self.handle_z_command(f, c, l, s, z, in_split)
 
             if z == 0 and f > 0:
                 self.hide_next_response = False
@@ -190,6 +136,62 @@ class IJ_Core:
                     elements.append('\r\n')
                     self.cmd_queue.insert(0, QueuedCommand(self.active_mmu_id, QCR_FORWARD, ' '.join(elements)))
                     self.send_queue_this_iteration = True
+
+    def handle_z_command(self, f: int, c: int, l: int, s: int, z: int, in_split: list[str]):
+        if z == 1:
+            self.send_printer('Z1 ok.')
+
+        if z == 2:
+            data = ['Z2 ok.']
+            data += [f'software: "{SCRIPT_IDENTIFIER}"']
+            data += [f'version: "{SCRIPT_VERSION}"']
+            data += [f'author: "{SCRIPT_AUTHOR}"']
+            data += [f'mmu_count: {len(self.mmu_comms)}']
+            data += [f'channel_count: {len(self.mmu_comms) * 4}']
+            data += [f'peripheral_count: {len(self.peripherals)}']
+            data += [f'mmu_requests: {self.mmu_requests}']
+            data += [f'mmu_timeouts: {self.mmu_timeouts}']
+            self.send_printer(' '.join(data))
+
+        if z == 3:
+            data = ['Z3 ok.']
+            for i, peripheral in enumerate(self.peripherals):
+                data += [f'peripheral_{i}: "{peripheral.identifier}"']
+            self.send_printer(' '.join(data))
+
+        if z == 4:
+            data = ['Z4 ok.']
+            for i, peripheral in enumerate(self.peripherals):
+                if peripheral.report_in_Z4 or f != 0:
+                    data += [peripheral.get_status_info()]
+            self.send_printer(' '.join(data))
+
+        if z == 5:
+            if c >= 0 and c < len(self.peripherals):
+                peripheral = self.peripherals[c]
+                result = self.peripherals[c].handle_command(f, l, s, in_split)
+                self.send_printer(f'Z5 ok. {result}')
+            else:
+                self.send_printer(f'Z5 ok. Invalid peripheral index {c}')
+
+        if z == 6:
+            config = {}
+            for item in in_split[1:]:
+                pair = item.split('=', 1)
+                if len(pair) == 2:
+                    config[pair[0]] = pair[1]
+            try:
+                new_index = len(self.peripherals)
+                new_peripheral = load_peripheral(new_index, config, self.comm.comm_list)
+                self.peripherals.append(new_peripheral)
+                self.send_printer(f'Z6 ok. Peripheral {new_index} added')
+            except:
+                self.send_printer('Z6 ok. Failed')
+
+
+        if z == 99:
+            self.terminate = True
+            self.send_printer('Z99 ok. Terminating')
 
     def send_mmu(self, data: str, mmu: int):
         self.mmu_requests += 1
@@ -233,6 +235,7 @@ class IJ_Core:
             if self.sent_timeout and time.ticks_diff(self.sent_timeout, time.ticks_ms()) < 0:
                 self.sent_timeout = None
                 self.mmu_timeouts += 1
+                self.console.print(f'Timeout awaiting MMU response (handling {self.sent_response_handling})', 'error')
                 if self.sent_response_handling == QCR_F13:
                     self.update_cached_F13_data('', self.sent_target_mmu)
 
@@ -299,15 +302,9 @@ class IJ_Core:
         if self.include_peripherals_in_status:
             for i, peripheral in enumerate(self.peripherals):
                 if peripheral.report_in_F13:
-                    if peripheral.use_primary_thread and peripheral.auto_thread_lock:
-                        peripheral.thread_lock.acquire()
-                    try:
-                        out_text += [f'peripheral_{i}: {peripheral.get_status_code()}']
-                    finally:
-                        if peripheral.use_primary_thread and peripheral.auto_thread_lock:
-                            peripheral.thread_lock.release()
+                    out_text += [peripheral.get_status_info()]
 
-        out_text += ['jinsi_GCONF: 000001dc qiehuan_GCONF: 000001dc']
+        #out_text += ['jinsi_GCONF: 000001dc qiehuan_GCONF: 000001dc'] # Z-Mod doesn't actually use these, so removed them
 
         self.send_printer(' '.join(out_text))
 
@@ -317,24 +314,18 @@ class IJ_Core:
                 self.console.print("Printer disconnected", 'info')
                 self.printer_connected_timeout_expire = None
                 for peripheral in self.peripherals:
-                    if peripheral.use_primary_thread and peripheral.auto_thread_lock:
-                        peripheral.thread_lock.acquire()
-                    try:
-                        peripheral.timeout()
-                    finally:
-                        if peripheral.use_primary_thread and peripheral.auto_thread_lock:
-                            peripheral.thread_lock.release()
+                    peripheral.timeout()
 
     def run(self):
-        self.started = True
         update_peripheral_index = 0
-        while not self.comm.started:
-            pass
         if self.printer_comm:
             while self.printer_comm.check_receive(): 
                 self.printer_comm.receive() # Clear any that came in before core was ready
         while not self.terminate:
             try:
+                self.console.flush()
+
+                self.comm.update()
                 self.update_printer()
                 self.update_mmu()
                 self.update_timeout()
@@ -342,28 +333,25 @@ class IJ_Core:
                 if len(self.peripherals) > 0:
                     if update_peripheral_index >= len(self.peripherals):
                         update_peripheral_index = 0
-                    else:
-                        if not self.peripherals[update_peripheral_index].use_primary_thread:
-                            self.peripherals[update_peripheral_index].update()
+                    if len(self.peripherals) > 0:
+                        self.peripherals[update_peripheral_index].update()
                         update_peripheral_index += 1
             except KeyboardInterrupt:
                 self.terminate = True
             except Exception as e:
                 self.console.print_exception(e, 'core')
 
-            if self.comm.terminate:
-                self.terminate = True
-
         for peripheral in self.peripherals:
             try:
-                if peripheral.use_primary_thread and peripheral.auto_thread_lock:
-                    peripheral.thread_lock.acquire()
-                try:
-                    peripheral.shutdown()
-                finally:
-                    if peripheral.use_primary_thread and peripheral.auto_thread_lock:
-                        peripheral.thread_lock.release()
+                peripheral.shutdown()
+            except KeyboardInterrupt:
+                raise        
             except Exception as e:
-                self.console.print_exception(e)
+                self.console.print_exception(e, 'Peripheral shutdown')
 
-        self.finished = True
+        try:
+            self.comm.close_comms()
+        except KeyboardInterrupt:
+            raise        
+        except Exception as e:
+            self.console.print_exception(e, 'Comm shutdown')

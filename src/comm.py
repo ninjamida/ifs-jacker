@@ -1,7 +1,7 @@
 from machine import UART, Pin
 from util import decode_valid_bytes
 from console import get_console
-import time, machine, _thread
+import time, machine
 
 DEFAULT_INTER_CHAR_TIMEOUT = int(0.005 * 1000) # Will always allow one more iteration after last data was received regardless of timeout
 
@@ -15,65 +15,36 @@ SIO_BASE = 0xd0000000
 GPIO_OUT_SET = SIO_BASE + 0x14
 GPIO_OUT_CLR = SIO_BASE + 0x18
 
-class IJ_Comm_Manager:
-    terminate = False
-    
+class IJ_Comm_Manager:    
     def __init__(self):
         self.comm_list = []
-        self.peripherals = []
-        self.started = False
-        self.terminate = False
-        self.finished = False
         self.console = get_console()
 
         self.core: IJ_Core = None # type: ignore
 
-    def start_thread(self):
-        _thread.start_new_thread(self.run, ())
+    def update(self):
+        try:
+            for comm in self.comm_list:
+                comm.update()
+        except KeyboardInterrupt:
+            raise        
+        except Exception as e:
+            self.console.print_exception(e, 'comms')
 
-    def run(self):
-        self.started = True
-        update_comm_index = 0
-        update_peripheral_index = 0
-        while not self.terminate:
-            self.console.flush()
-            try:
-                if len(self.comm_list) > 0:
-                    if update_comm_index >= len(self.comm_list):
-                        update_comm_index = 0
-                    else:
-                        self.comm_list[update_comm_index].update()
-                        update_comm_index += 1
-
-                if len(self.peripherals) > 0:
-                    if update_peripheral_index >= len(self.peripherals):
-                        update_peripheral_index = 0
-                    else:
-                        if self.peripherals[update_peripheral_index].use_primary_thread:
-                            self.peripherals[update_peripheral_index].update()
-                        update_peripheral_index += 1
-            except KeyboardInterrupt:
-                self.terminate = True
-            except Exception as e:
-                self.console.print_exception(e, 'comms')
-
-            if self.core.terminate:
-                self.terminate = True
-
+    def close_comms(self):
         for comm_interface in self.comm_list:
             try:
                 comm_interface.shutdown()
+            except KeyboardInterrupt:
+                raise        
             except Exception as e:
                 self.console.print_exception(e)
-        self.finished = True
 
 class _IJ_Comm_Abstract:
     def __init__(self):
         self._send_queue: list[str] = []
         self._receive_queue: list[str] = []
         self._receive_buffer: list[bytes] = []
-        self._send_lock = _thread.allocate_lock()
-        self._receive_lock = _thread.allocate_lock()
 
         self.inter_char_timeout = DEFAULT_INTER_CHAR_TIMEOUT
 
@@ -82,19 +53,15 @@ class _IJ_Comm_Abstract:
         self._receive_timeout_time = time.ticks_ms()
 
     def send(self, data: str):
-        self._send_lock.acquire()
         self._send_queue.append(data)
-        self._send_lock.release()
 
     def check_receive(self) -> bool:
         return len(self._receive_queue) > 0
 
     def receive(self) -> str:
         if len(self._receive_queue) > 0:
-            if self._receive_lock.acquire(0):
-                result = self._receive_queue.pop(0)
-                self._receive_lock.release()
-                return result
+            result = self._receive_queue.pop(0)
+            return result
 
         return ''
 
@@ -111,9 +78,7 @@ class _IJ_Comm_Abstract:
         elif len(self._receive_buffer) > 0 and time.ticks_diff(self._receive_timeout_time, time.ticks_ms()) < 0:
             data = decode_valid_bytes(b''.join(self._receive_buffer))
             self._receive_buffer = []
-            self._receive_lock.acquire()
             self._receive_queue.append(data)
-            self._receive_lock.release()
 
     def initialize(self):
         pass
@@ -122,10 +87,8 @@ class _IJ_Comm_Abstract:
         pass
 
     def _send_next_queued_command(self):
-        if self._send_lock.acquire(0):
-            send_data = self._send_queue.pop(0)
-            self._send_lock.release()
-            self._comm_send(send_data.encode('utf-8'))
+        send_data = self._send_queue.pop(0)
+        self._comm_send(send_data.encode('utf-8'))
 
     def _comm_send(self, data: bytes):
         pass
@@ -263,17 +226,13 @@ class IJ_Comm_UART_EN_Multi(_IJ_Comm_Abstract): # Don't use directly. Use IJ_Com
                 en_pin = self._last_used_en_pin
 
         self._last_used_en_pin = en_pin
-        self._send_lock.acquire()
         self._send_queue.append(data)
         self._queue_en_pins.append(en_pin)
-        self._send_lock.release()
 
     def _send_next_queued_command(self):
-        if self._send_lock.acquire(0):
-            send_data = self._send_queue.pop(0)
-            en_pin = self._queue_en_pins.pop(0)
-            self._send_lock.release()
-            self._comm_send(send_data.encode('utf-8'), en_pin)
+        send_data = self._send_queue.pop(0)
+        en_pin = self._queue_en_pins.pop(0)
+        self._comm_send(send_data.encode('utf-8'), en_pin)
 
     def _comm_send(self, data: bytes, en_pin: Pin):
         pin_bit = 1 << self.en_pin_ids[self.en_pins.index(en_pin)]

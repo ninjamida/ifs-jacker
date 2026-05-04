@@ -2,6 +2,7 @@ from util import load_ini_file
 from console import get_console
 from core import IJ_Core
 from p_dummy import IJP_Dummy
+from peripheral import load_peripheral
 import comm, gc
 
 STANDARD_COMM_GENERATION_TYPES = [comm.IJ_Comm_UART, comm.IJ_Comm_UART_EN]
@@ -10,74 +11,69 @@ def load_config(core: IJ_Core, comm_mgr: comm.IJ_Comm_Manager):
     ini_data = load_ini_file('config.ini')
     console = get_console()
 
-    console.begin_print('config')
-    try:
-        core_data = ini_data.get('core', {})
-        core.printer_connected_timeout = int(float(core_data.get('timeout', 3)) * 1000)
-        core.include_channel_count_in_status = core_data.get('include_channel_count_in_status', 'true') == 'true'
-        core.include_peripherals_in_status = core_data.get('include_peripherals_in_status', 'true') == 'true'
-        core.mmu_response_timeout = int(float(core_data.get('mmu_timeout', 0.06)) * 1000)
-        force_present_channels = [item.strip() for item in core_data.get('force_present_channels', '').split(',')]
-        force_absent_channels = [item.strip() for item in core_data.get('force_absent_channels', '').split(',')]
-        if len(force_absent_channels) > 1 or force_absent_channels[0] != '':
-            mask = 0
-            for i in [int(channel) for channel in force_absent_channels]:
-                mask |= 1 << i-1
-            core.force_absent_mask = ~mask
-        if len(force_present_channels) > 1 or force_present_channels[0] != '':
-            mask = 0
-            for i in [int(channel) for channel in force_present_channels]:
-                mask |= 1 << i-1
-            core.force_present_mask = mask & core.force_absent_mask
+    core_data = ini_data.get('core', {})
+    core.printer_connected_timeout = int(float(core_data.get('timeout', 3)) * 1000)
+    core.include_channel_count_in_status = core_data.get('include_channel_count_in_status', 'true') == 'true'
+    core.include_peripherals_in_status = core_data.get('include_peripherals_in_status', 'true') == 'true'
+    core.mmu_response_timeout = int(float(core_data.get('mmu_timeout', 0.06)) * 1000)
+    force_present_channels = [item.strip() for item in core_data.get('force_present_channels', '').split(',')]
+    force_absent_channels = [item.strip() for item in core_data.get('force_absent_channels', '').split(',')]
+    if len(force_absent_channels) > 1 or force_absent_channels[0] != '':
+        mask = 0
+        for i in [int(channel) for channel in force_absent_channels]:
+            mask |= 1 << i-1
+        core.force_absent_mask = ~mask
+    if len(force_present_channels) > 1 or force_present_channels[0] != '':
+        mask = 0
+        for i in [int(channel) for channel in force_present_channels]:
+            mask |= 1 << i-1
+        core.force_present_mask = mask & core.force_absent_mask
 
-        console_data = ini_data.get('console', {})
-        console.exclude_categories = [item.strip() for item in console_data.get('exclude_categories', '').split(',')]
-        if len(console.exclude_categories) == 1 and console.exclude_categories[0] == '':
-            console.exclude_categories = ['silent']
-        console.include_categories = [item.strip() for item in console_data.get('include_categories', '').split(',')]
-        if len(console.include_categories) == 1 and console.include_categories[0] == '':
-            console.include_categories = []
+    console_data = ini_data.get('console', {})
+    console.exclude_categories = [item.strip() for item in console_data.get('exclude_categories', '').split(',')]
+    if len(console.exclude_categories) == 1 and console.exclude_categories[0] == '':
+        console.exclude_categories = ['silent']
+    console.include_categories = [item.strip() for item in console_data.get('include_categories', '').split(',')]
+    if len(console.include_categories) == 1 and console.include_categories[0] == '':
+        console.include_categories = []
 
-        multi_connections: dict = {}
-        all_comms: list = []
+    multi_connections: dict = {}
+    all_comms: list = []
 
-        for multi_key in ini_data.keys():
-            if multi_key.startswith('uart_multi_') and len(multi_key) > 11:
-                new_id = multi_key[11:]
-                console.print(f'Loading UART multi-connection {new_id}', 'config')
-                new_multi_comm = comm.IJ_Comm_UART_EN_Multi.make_from_config(ini_data[multi_key])
-                multi_connections[new_id] = new_multi_comm
-                all_comms.append(new_multi_comm)
+    for multi_key in ini_data.keys():
+        if multi_key.startswith('uart_multi_') and len(multi_key) > 11:
+            new_id = multi_key[11:]
+            console.print(f'Loading UART multi-connection {new_id}', 'config')
+            new_multi_comm = comm.IJ_Comm_UART_EN_Multi.make_from_config(ini_data[multi_key])
+            multi_connections[new_id] = new_multi_comm
+            all_comms.append(new_multi_comm)
 
-        printer_data = ini_data.get('printer', None)
-        if printer_data:
-            console.print(f'Loading printer', 'config')
-            core.printer_comm = get_comm(printer_data, multi_connections)
-            all_comms.append(core.printer_comm)
+    printer_data = ini_data.get('printer', None)
+    if printer_data:
+        console.print(f'Loading printer', 'config')
+        core.printer_comm = get_comm(printer_data, multi_connections)
+        all_comms.append(core.printer_comm)
 
-        mmu_index = 0
-        while f'mmu_{mmu_index}' in ini_data.keys():
-            console.print(f'Loading MMU {mmu_index}', 'config')
-            mmu_data = ini_data[f'mmu_{mmu_index}']
-            new_comm = get_comm(mmu_data, multi_connections)
-            core.mmu_comms.append(new_comm)
-            all_comms.append(new_comm)
-            mmu_index += 1
+    mmu_index = 0
+    while f'mmu_{mmu_index}' in ini_data.keys():
+        console.print(f'Loading MMU {mmu_index}', 'config')
+        mmu_data = ini_data[f'mmu_{mmu_index}']
+        new_comm = get_comm(mmu_data, multi_connections)
+        core.mmu_comms.append(new_comm)
+        all_comms.append(new_comm)
+        mmu_index += 1
 
-        comm_mgr.comm_list = all_comms
+    comm_mgr.comm_list = all_comms
 
-        peripherals = load_peripherals(ini_data, all_comms)
-        core.peripherals = peripherals
-        comm_mgr.peripherals = peripherals
+    peripherals = load_peripherals(ini_data, all_comms)
+    core.peripherals = peripherals.copy()
 
-        for this_comm in all_comms:
-            this_comm.initialize()
+    for this_comm in all_comms:
+        this_comm.initialize()
 
-        for this_peripheral in peripherals:
-            this_peripheral.initialize()
-    finally:
-        console.end_print()
-        gc.collect()
+    for this_peripheral in peripherals:
+        this_peripheral.initialize()
+    gc.collect()
 
 def get_comm(data: dict[str, str], multi_connections: dict):
     multi_id = data.get('multi_id', '')
@@ -95,6 +91,9 @@ def get_comm(data: dict[str, str], multi_connections: dict):
     raise Exception(f'Invalid comm type "{comm_type}"')
 
 def load_peripherals(ini_data: dict[str, dict[str, str]], all_comms: list[comm._IJ_Comm_Abstract]) -> list:
+    console = get_console()
+
+    console.print('Loading peripherals', 'config')
     highest_index = -1
     for sec_name in ini_data.keys():
         if sec_name.startswith('peripheral_'):
@@ -107,31 +106,22 @@ def load_peripherals(ini_data: dict[str, dict[str, str]], all_comms: list[comm._
     result = []
     for i in range(highest_index + 1):
         if f'peripheral_{i}' in ini_data:
+            console.print(f'Loading peripheral {i}', 'config')
             try:
                 peripheral_sec = ini_data[f'peripheral_{i}']
-                peripheral_type = peripheral_sec['type']
-                module = __import__(f'p_{peripheral_type}')
-                cls = None
-                for attr in dir(module):
-                    if attr.lower() == f'ijp_{peripheral_type}':
-                        cls = getattr(module, attr)
-                        break
-                if cls is None:
-                    raise ImportError(f'Class not found')
-
-                new_peripheral = cls.create(peripheral_sec, all_comms)
-
-                new_peripheral.identifier = peripheral_sec.get('identifier', new_peripheral.identifier)
-
-                new_peripheral.report_in_F13 = (peripheral_sec.get('report_f13', 'true' if new_peripheral.report_in_F13 else 'false') == 'true')
-                new_peripheral.report_in_Z4 = (peripheral_sec.get('report_z4', 'true' if new_peripheral.report_in_F13 else 'false') == 'true')
+                new_peripheral = load_peripheral(i, peripheral_sec, all_comms)
 
                 result.append(new_peripheral)
-            except:
+            except KeyboardInterrupt:
+                raise        
+            except Exception as e:
                 new_peripheral = IJP_Dummy()
                 new_peripheral.identifier = "Failed to load"
                 result.append(new_peripheral)
+                console.print_exception(e, 'config')
         else:
-            result.append(IJP_Dummy())
+            new_peripheral = IJP_Dummy()
+            new_peripheral.identifier = "Placeholder dummy"
+            result.append(new_peripheral)
 
     return result
