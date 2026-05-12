@@ -44,14 +44,13 @@ class IJP_SGP30(IJ_Peripheral):
                 lines = f.readlines()
                 baseline_co2 = int(lines[0].strip())
                 baseline_tvoc = int(lines[1].strip())
-            console.get_console().print("loaded baselines", 'info')
             self.sgp30.set_iaq_baseline(baseline_co2, baseline_tvoc)
         except:
             pass
     
     def handle_command(self, f=0, l=0, s=0, params=[]) -> str:
         if f == 2:
-            return f"F2 peripheral ok. co2: {self.last_co2} tvoc: {self.last_tvoc}"
+            return f"F2 peripheral ok. co2: {self.last_co2 / 1000} tvoc: {self.last_tvoc / 1000}"
         if f == 3:
             baseline = self.sgp30.get_iaq_baseline()
             if baseline is None:
@@ -60,7 +59,7 @@ class IJP_SGP30(IJ_Peripheral):
         return super().handle_command(f, l, s, params)
 
     def get_status_info(self) -> str:
-        return f'{self.short_identifier}_co2: {self.last_co2} {self.short_identifier}_tvoc: {self.last_tvoc}'
+        return f'{self.short_identifier}_co2: {self.last_co2 / 1000} {self.short_identifier}_tvoc: {self.last_tvoc / 1000}'
     
     def update(self):
         if time.ticks_diff(self.next_update_time, time.ticks_ms()) < 0:
@@ -78,12 +77,10 @@ class IJP_SGP30(IJ_Peripheral):
             self.next_update_time = time.ticks_add(time.ticks_ms(), SGP30_UPDATE_DELAY)
         if time.ticks_diff(self.next_record_baseline_time, time.ticks_ms()) < 0:
             try:
-                console.get_console().print("before write", 'info')
                 baseline = self.sgp30.get_iaq_baseline()
                 if baseline is not None:
                     with open(self.baseline_file, 'w') as f:
                         f.write(f'{baseline[0]}\n{baseline[1]}')
-                console.get_console().print("after write", 'info')
             except Exception as e:
                 console.get_console().print_exception(e, 'sgp30')
             self.next_record_baseline_time = time.ticks_add(time.ticks_ms(), SGP30_RECORD_BASELINE_DELAY)
