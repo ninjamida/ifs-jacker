@@ -9,8 +9,6 @@
 #
 # Commands:
 #  F2 (get status) - Includes "temperature: X" in the response (eg "temperature: 23.18")
-#
-# Status code: The temperature multiplied by 100 (eg if the temperature is 23.18, it will respond 2318)
 
 from comm import _IJ_Comm_Abstract
 from p_analog_pin import IJP_Analog_Pin

@@ -13,8 +13,6 @@
 #  F3 (set all) - Sets power of all channels. Powers are specified by L value, as a 32 bit value (red is lowest 8 bits, white is highest), frequency optionally supplied by S value (sets one value for all channels). Can pass -1 for L value if trying to set only frequency.
 #  F4 (set channel) - Sets power of one channel. Power is specified by L value (0 - 255), channel is specified by S value (r = 0, w = 3)
 #  F5 (set freq) - Sets frequency of one channel. Frequency is specified by L value, channel is specified by S value (r = 0, w = 3)
-#
-# Status code: All channels packed into a 32-bit value (red is lowest 8 bits, white is highest)
 
 from peripheral import IJ_Peripheral
 from machine import Pin, PWM

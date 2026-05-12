@@ -9,8 +9,6 @@
 # Commands:
 #  F2 (get status) - Includes "power: X" in the response. This is the last set value (0 - 65535)
 #  F3 (set power) - Sets power of PWM signal. Power is specified by L value, range is 0 to 65535. Frequency (in kHz) optionally specified by S value.
-#
-# Status code: The last set value (0 - 65535)
 
 from peripheral import IJ_Peripheral
 from machine import Pin, PWM
