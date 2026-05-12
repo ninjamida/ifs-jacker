@@ -3,7 +3,7 @@
 # This is intended to fill gaps in your peripheral list if you want to remove one but don't want
 # to update your configuration on the printer.
 #
-# No config params, no commands (except the generic ones), always returns status code 0.
+# No config params, no commands (except the generic ones).
 
 from peripheral import IJ_Peripheral
 from comm import _IJ_Comm_Abstract

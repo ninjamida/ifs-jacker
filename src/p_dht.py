@@ -6,8 +6,6 @@
 #
 # Commands:
 #  F2 (get status) - Includes "temperature: X humidity: X" in the response
-#
-# Status code: The last temperature reading of the pin
 
 from peripheral import IJ_Peripheral
 from machine import Pin

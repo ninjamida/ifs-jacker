@@ -8,8 +8,6 @@
 #
 # Commands:
 #  F2 (get status) - Includes "pin_state: X" in the response
-#
-# Status code: The reading of the pin (with averaging / read period applied as necessary)
 
 from peripheral import IJ_Peripheral
 from machine import Pin, ADC

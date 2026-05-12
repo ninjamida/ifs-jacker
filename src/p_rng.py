@@ -8,8 +8,6 @@
 # Commands:
 #  F2 (get status) - Includes "last_rng: X" in the response
 #  F3 (get fresh random number) - Generates and returns a random number (seperate from the cached value)
-#
-# Status code: The last generated random number
 
 from peripheral import IJ_Peripheral
 from comm import _IJ_Comm_Abstract

@@ -9,8 +9,6 @@
 # Commands:
 #  F2 (get status) - Includes "pin_state: 0" or "pin_state: 1" in the response.
 #  F3 (set state)  - Output pin only. Sets the current state of the pin (L0 low, L1 high)
-#
-# Status code: Returns the state of the pin.
 
 from peripheral import IJ_Peripheral
 from machine import Pin
