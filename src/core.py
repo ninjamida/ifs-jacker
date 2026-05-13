@@ -57,7 +57,8 @@ class IJ_Core:
         self.mmu_response_timeout = int(0.05 * 1000)
 
         self.include_channel_count_in_status = True
-        self.include_peripherals_in_status = True
+        self.peripherals_in_status_count = -1
+        self.status_peripheral_index = 0
 
     def send_printer(self, data: str):
         if self.printer_comm:
@@ -298,10 +299,17 @@ class IJ_Core:
         if self.include_channel_count_in_status:
             out_text += [f'channel_count: {len(self.mmu_comms) * 4}']
 
-        if self.include_peripherals_in_status:
-            for i, peripheral in enumerate(self.peripherals):
+        if self.peripherals_in_status_count != 0 and len(self.peripherals) > 0:
+            added_count = 0
+            start_index = self.status_peripheral_index
+            while True:
+                peripheral = self.peripherals[self.status_peripheral_index]
                 if peripheral.report_in_F13:
                     out_text += [peripheral.get_status_info()]
+                    added_count += 1
+                self.status_peripheral_index = (self.status_peripheral_index + 1) % len(self.peripherals)
+                if self.status_peripheral_index == start_index or (self.peripherals_in_status_count > 0 and added_count >= self.peripherals_in_status_count):
+                    break
 
         #out_text += ['jinsi_GCONF: 000001dc qiehuan_GCONF: 000001dc'] # Z-Mod doesn't actually use these, so removed them
 
