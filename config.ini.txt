@@ -10,7 +10,7 @@ timeout=3                                 ; Default: 3. After this many seconds 
 include_channel_count_in_status=true      ; Default: true. If true, response to F13 commands will add a "channel_count" parameter indicating how many channels the IFS Jacker can provide
 include_peripherals_in_status=true        ; Default: (none). If true, response to F13 commands will include the status of all peripherals. If false, F13 will not include peripheral statuses. Overrides the next param if present.
 peripherals_in_status=-1                  ; Default: -1. If negative, F13 responses will include the status of all peripherals. If 0, F13 will not include peripheral statuses. If positive, F13 will include (up to) that many peripheral statuses each time, rotating between them.
-mmu_timeout=0.06                          ; Default: 0.06. Sets how long IFS Jacker will wait for an IFS to respond to a command before timing out. (Giving up, and in the case of an F13 request, assuming all channels empty and idle.)
+mmu_timeout=0.065                         ; Default: 0.065. Sets how long IFS Jacker will wait for an IFS to respond to a command before timing out. (Giving up, and in the case of an F13 request, assuming all channels empty and idle.)
 force_present_channels=1,2                ; Default: (none). Any channels listed here will always be reported as having filament in them regardless of what the IFS says. 1-based.
 force_absent_channels=3,4                 ; Default: (none). Channels listed here will always be reported empty. If a channel is listed in both of these, absent has priority.
 

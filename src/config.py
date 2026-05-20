@@ -22,7 +22,7 @@ def load_config(core: IJ_Core, comm_mgr: comm.IJ_Comm_Manager):
             core.peripherals_in_status_count = 0
     else:
         core.peripherals_in_status_count = int(core_data.get('peripherals_in_status', -1))
-    core.mmu_response_timeout = int(float(core_data.get('mmu_timeout', 0.06)) * 1000)
+    core.mmu_response_timeout = int(float(core_data.get('mmu_timeout', 0.065)) * 1000)
     force_present_channels = [item.strip() for item in core_data.get('force_present_channels', '').split(',')]
     force_absent_channels = [item.strip() for item in core_data.get('force_absent_channels', '').split(',')]
     if len(force_absent_channels) > 1 or force_absent_channels[0] != '':
