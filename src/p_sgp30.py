@@ -12,6 +12,7 @@ from machine import Pin, I2C
 import uSGP30
 import time
 import console
+import os
 
 SGP30_I2C_FREQUENCY = 400000
 SGP30_UPDATE_DELAY = 1 * 1000
@@ -56,6 +57,13 @@ class IJP_SGP30(IJ_Peripheral):
             if baseline is None:
                 baseline = [0, 0]
             return f"F3 periperhal ok. co2_baseline: {baseline[0]} tvoc_baseline: {baseline[1]}"
+        if f == 4:
+            try:
+                os.remove(self.baseline_file)
+            except:
+                pass
+            self.sgp30.iaq_init()
+            return "F4 periperhal ok. Baseline erased"
         return super().handle_command(f, l, s, params)
 
     def get_status_info(self) -> str:
@@ -63,7 +71,10 @@ class IJP_SGP30(IJ_Peripheral):
     
     def update(self):
         if time.ticks_diff(self.next_update_time, time.ticks_ms()) < 0:
-            measure_result = self.sgp30.measure_iaq()
+            try:
+                measure_result = self.sgp30.measure_iaq()
+            except:
+                measure_result = None
             if measure_result is None:
                 if self.last_result_none:
                     self.last_co2 = 400
