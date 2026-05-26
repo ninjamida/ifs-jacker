@@ -40,7 +40,7 @@ class IJP_DHT(IJ_Peripheral):
     def get_status_info(self) -> str:
         return f'{self.short_identifier}_temperature: {self.temperature} {self.short_identifier}_humidity: {self.humidity}'
     
-    def update(self):
+    def update(self, core_idle: bool):
         if time.ticks_diff(self.delay_timeout, time.ticks_ms()) < 0:
             try:
                 temp, humidity = self.sensor.read()

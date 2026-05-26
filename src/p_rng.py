@@ -24,7 +24,7 @@ class IJP_RNG(IJ_Peripheral):
 
         self.cached_random_value = 0
 
-    def update(self):
+    def update(self, core_idle: bool):
         if time.ticks_diff(self.refresh_time, time.ticks_ms()) < 0:
             self.refresh_time = time.ticks_add(time.ticks_ms(), self.refresh)
             self.cached_random_value = random.randrange(self.min, self.max + 1)

@@ -40,6 +40,9 @@ class IJP_SGP30(IJ_Peripheral):
         self.last_tvoc = 0
         self.last_co2 = 400
 
+        self.is_error_state = False
+        self.error_recover_failed = False
+
         try:
             with open(self.baseline_file, 'r') as f:
                 lines = f.readlines()
@@ -51,7 +54,13 @@ class IJP_SGP30(IJ_Peripheral):
     
     def handle_command(self, f=0, l=0, s=0, params=[]) -> str:
         if f == 2:
-            return f"F2 peripheral ok. co2: {self.last_co2} tvoc: {self.last_tvoc}"
+            if self.is_error_state:
+                if self.error_recover_failed:
+                    return f"F2 peripheral ok. error state. recover failed"
+                else:
+                    return f"F2 peripheral ok. error state. awaiting recovery"
+            else:
+                return f"F2 peripheral ok. co2: {self.last_co2} tvoc: {self.last_tvoc}"
         if f == 3:
             baseline = self.sgp30.get_iaq_baseline()
             if baseline is None:
@@ -69,7 +78,27 @@ class IJP_SGP30(IJ_Peripheral):
     def get_status_info(self) -> str:
         return f'{self.short_identifier}_co2: {self.last_co2} {self.short_identifier}_tvoc: {self.last_tvoc}'
     
-    def update(self):
+    def update(self, core_idle: bool):
+        if self.is_error_state:
+            if core_idle and not self.error_recover_failed:
+                self.sgp30 = uSGP30.SGP30(self.i2c)
+                try:
+                    with open(self.baseline_file, 'r') as f:
+                        lines = f.readlines()
+                        baseline_co2 = int(lines[0].strip())
+                        baseline_tvoc = int(lines[1].strip())
+                    self.sgp30.set_iaq_baseline(baseline_co2, baseline_tvoc)
+                except:
+                    pass
+
+                self.is_error_state = False
+                try:
+                    self.sgp30.measure_iaq()
+                except:
+                    self.is_error_state = True
+                    self.error_recover_failed = True
+            return
+
         if time.ticks_diff(self.next_update_time, time.ticks_ms()) < 0:
             try:
                 measure_result = self.sgp30.measure_iaq()
@@ -79,6 +108,7 @@ class IJP_SGP30(IJ_Peripheral):
                 if self.last_result_none:
                     self.last_co2 = 400
                     self.last_tvoc = 0
+                    self.is_error_state = True
                 else:
                     self.last_result_none = True
             else:
