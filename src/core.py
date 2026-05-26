@@ -44,8 +44,8 @@ class IJ_Core:
 
         self.printer_connected_timeout_expire = None
 
-        self.mmu_timeouts = 0
-        self.mmu_requests = 0
+        self.mmu_timeouts = []
+        self.mmu_requests = []
 
         self.peripherals: list[IJ_Peripheral] = []
 
@@ -150,8 +150,8 @@ class IJ_Core:
             data += [f'mmu_count: {len(self.mmu_comms)}']
             data += [f'channel_count: {len(self.mmu_comms) * 4}']
             data += [f'peripheral_count: {len(self.peripherals)}']
-            data += [f'mmu_requests: {self.mmu_requests}']
-            data += [f'mmu_timeouts: {self.mmu_timeouts}']
+            data += [f'mmu_requests: {','.join(map(str, self.mmu_requests))}']
+            data += [f'mmu_timeouts: {','.join(map(str, self.mmu_timeouts))}']
             self.send_printer(' '.join(data))
 
         if z == 3:
@@ -195,7 +195,7 @@ class IJ_Core:
             self.send_printer('Z99 ok. Terminating')
 
     def send_mmu(self, data: str, mmu: int):
-        self.mmu_requests += 1
+        self.mmu_requests[mmu] += 1
         if len(self.mmu_comms) > 0:
             self.mmu_comms[mmu].send(data)
             if self.sent_response_handling != QCR_SILENT:
@@ -235,7 +235,7 @@ class IJ_Core:
 
             if self.sent_timeout and time.ticks_diff(self.sent_timeout, time.ticks_ms()) < 0:
                 self.sent_timeout = None
-                self.mmu_timeouts += 1
+                self.mmu_timeouts[self.sent_target_mmu] += 1
                 if self.sent_response_handling == QCR_F13:
                     self.update_cached_F13_data('', self.sent_target_mmu)
 
@@ -324,6 +324,8 @@ class IJ_Core:
                     peripheral.timeout()
 
     def run(self):
+        self.mmu_timeouts = [0] * len(self.mmu_comms)
+        self.mmu_requests = [0] * len(self.mmu_comms)
         update_peripheral_index = 0
         if self.printer_comm:
             while self.printer_comm.check_receive(): 
