@@ -6,7 +6,7 @@ purchasing some of my paid models on Printables as a way to support my work -
 feel free to think of it as making a donation that you also get a fun model in
 return for.
 
-https://www.printables.com/@Trumble/store
+https://www.printables.com/@ninjamida/store
 ***
 
 At this time, IFS Jacker has had limited testing. Build and use at your own
