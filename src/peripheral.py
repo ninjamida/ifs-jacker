@@ -30,7 +30,7 @@ class IJ_Peripheral:
         self.report_in_Z4 = True
         self.short_identifier = '?'
 
-    def update(self): # Runs frequently while idle.
+    def update(self, core_idle: bool): # Runs frequently while idle.
         pass
 
     def initialize(self): # Runs once.

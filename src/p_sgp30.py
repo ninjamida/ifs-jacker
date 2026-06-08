@@ -12,6 +12,7 @@ from machine import Pin, I2C
 import uSGP30
 import time
 import console
+import os
 
 SGP30_I2C_FREQUENCY = 400000
 SGP30_UPDATE_DELAY = 1 * 1000
@@ -20,6 +21,8 @@ SGP30_RECORD_BASELINE_DELAY = 60 * 60 * 1000 # 1hr
 class IJP_SGP30(IJ_Peripheral):
     def __init__(self, i2c_index: int, i2c_scl_pin: int, i2c_sda_pin: int, baseline_file: str | None = None):
         super().__init__()
+
+        self.console = console.get_console()
 
         self.identifier = f'SGP30 {i2c_index}-{i2c_scl_pin}-{i2c_sda_pin}'
 
@@ -39,6 +42,9 @@ class IJP_SGP30(IJ_Peripheral):
         self.last_tvoc = 0
         self.last_co2 = 400
 
+        self.is_error_state = False
+        self.error_recover_failed = False
+
         try:
             with open(self.baseline_file, 'r') as f:
                 lines = f.readlines()
@@ -50,26 +56,75 @@ class IJP_SGP30(IJ_Peripheral):
     
     def handle_command(self, f=0, l=0, s=0, params=[]) -> str:
         if f == 2:
-            return f"F2 peripheral ok. co2: {self.last_co2} tvoc: {self.last_tvoc}"
+            if self.is_error_state:
+                if self.error_recover_failed:
+                    return f"F2 peripheral ok. error state. recover failed"
+                else:
+                    return f"F2 peripheral ok. error state. awaiting recovery"
+            else:
+                return f"F2 peripheral ok. co2: {self.last_co2} tvoc: {self.last_tvoc}"
         if f == 3:
             baseline = self.sgp30.get_iaq_baseline()
             if baseline is None:
                 baseline = [0, 0]
             return f"F3 periperhal ok. co2_baseline: {baseline[0]} tvoc_baseline: {baseline[1]}"
+        if f == 4:
+            try:
+                os.remove(self.baseline_file)
+            except:
+                pass
+            self.sgp30.iaq_init()
+            return "F4 periperhal ok. Baseline erased"
+        if f == 5:
+            self.is_error_state = True
+            self.error_recover_failed = False
+            return "F5 peripheral ok. Marked for reset"
         return super().handle_command(f, l, s, params)
 
     def get_status_info(self) -> str:
         return f'{self.short_identifier}_co2: {self.last_co2} {self.short_identifier}_tvoc: {self.last_tvoc}'
     
-    def update(self):
+    def update(self, core_idle: bool):
+        if self.is_error_state:
+            if core_idle and not self.error_recover_failed:
+                self.console.print('Attempting SGP30 reset', 'info')
+                self.sgp30 = uSGP30.SGP30(self.i2c)
+                try:
+                    with open(self.baseline_file, 'r') as f:
+                        lines = f.readlines()
+                        baseline_co2 = int(lines[0].strip())
+                        baseline_tvoc = int(lines[1].strip())
+                    self.sgp30.set_iaq_baseline(baseline_co2, baseline_tvoc)
+                except:
+                    pass
+
+                self.is_error_state = False
+                try:
+                    self.sgp30.measure_iaq()
+                except:
+                    self.is_error_state = True
+                    self.error_recover_failed = True
+
+                if self.error_recover_failed:
+                    self.console.print('SGP30 reset unsuccessful', 'error')
+                else:
+                    self.console.print('SGP30 reset successfully', 'info')
+            return
+
         if time.ticks_diff(self.next_update_time, time.ticks_ms()) < 0:
-            measure_result = self.sgp30.measure_iaq()
+            try:
+                measure_result = self.sgp30.measure_iaq()
+            except:
+                measure_result = None
             if measure_result is None:
                 if self.last_result_none:
                     self.last_co2 = 400
                     self.last_tvoc = 0
+                    self.is_error_state = True
+                    self.console.print('Two consecutive SGP30 reads failed', 'error')
                 else:
                     self.last_result_none = True
+                    self.console.print('Failed to read SGP30', 'info')
             else:
                 self.last_result_none = False
                 self.last_co2 = measure_result[0]
@@ -82,7 +137,7 @@ class IJP_SGP30(IJ_Peripheral):
                     with open(self.baseline_file, 'w') as f:
                         f.write(f'{baseline[0]}\n{baseline[1]}')
             except Exception as e:
-                console.get_console().print_exception(e, 'sgp30')
+                self.console.print_exception(e, 'sgp30')
             self.next_record_baseline_time = time.ticks_add(time.ticks_ms(), SGP30_RECORD_BASELINE_DELAY)
 
     

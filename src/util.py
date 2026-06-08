@@ -2,7 +2,7 @@ import sys, io
 
 SCRIPT_IDENTIFIER = 'IFS Jacker'
 SCRIPT_AUTHOR = 'Namida Verasche (Trumble)'
-SCRIPT_VERSION = '3.0.0'
+SCRIPT_VERSION = '3.1.0'
 
 def get_traceback_string(e: Exception) -> list[str]:
     buf = io.StringIO()

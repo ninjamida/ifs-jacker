@@ -37,6 +37,7 @@ class IJ_Core:
         self.status_mmu_index = 0
         self.cmd_queue: list[QueuedCommand] = []
         self.send_queue_this_iteration = False
+        self.mmu_idle_time_end: int | None = None
 
         self.sent_target_mmu = 0
         self.sent_response_handling = QCR_DISCARD
@@ -44,8 +45,8 @@ class IJ_Core:
 
         self.printer_connected_timeout_expire = None
 
-        self.mmu_timeouts = 0
-        self.mmu_requests = 0
+        self.mmu_timeouts = []
+        self.mmu_requests = []
 
         self.peripherals: list[IJ_Peripheral] = []
 
@@ -55,10 +56,12 @@ class IJ_Core:
         self.printer_connected_timeout = 3 * 1000
 
         self.mmu_response_timeout = int(0.05 * 1000)
+        self.mmu_idle_command_delay = int(0.01 * 1000)
 
         self.include_channel_count_in_status = True
         self.peripherals_in_status_count = -1
         self.status_peripheral_index = 0
+        self.update_peripheral_index = 0
 
     def send_printer(self, data: str):
         if self.printer_comm:
@@ -150,8 +153,8 @@ class IJ_Core:
             data += [f'mmu_count: {len(self.mmu_comms)}']
             data += [f'channel_count: {len(self.mmu_comms) * 4}']
             data += [f'peripheral_count: {len(self.peripherals)}']
-            data += [f'mmu_requests: {self.mmu_requests}']
-            data += [f'mmu_timeouts: {self.mmu_timeouts}']
+            data += [f'mmu_requests: {','.join(map(str, self.mmu_requests))}']
+            data += [f'mmu_timeouts: {','.join(map(str, self.mmu_timeouts))}']
             self.send_printer(' '.join(data))
 
         if z == 3:
@@ -195,7 +198,7 @@ class IJ_Core:
             self.send_printer('Z99 ok. Terminating')
 
     def send_mmu(self, data: str, mmu: int):
-        self.mmu_requests += 1
+        self.mmu_requests[mmu] += 1
         if len(self.mmu_comms) > 0:
             self.mmu_comms[mmu].send(data)
             if self.sent_response_handling != QCR_SILENT:
@@ -235,27 +238,34 @@ class IJ_Core:
 
             if self.sent_timeout and time.ticks_diff(self.sent_timeout, time.ticks_ms()) < 0:
                 self.sent_timeout = None
-                self.mmu_timeouts += 1
+                self.mmu_timeouts[self.sent_target_mmu] += 1
                 if self.sent_response_handling == QCR_F13:
                     self.update_cached_F13_data('', self.sent_target_mmu)
 
-            if not self.sent_timeout and self.sent_response_handling == QCR_F13: # "if not self.sent_timeout" at this point means either (a) we got a response or (b) we've timed out
-                self.send_F13_response()
+            if not self.sent_timeout:
+                if self.sent_response_handling == QCR_F13: # "if not self.sent_timeout" at this point means either (a) we got a response or (b) we've timed out
+                    self.send_F13_response()
+                self.mmu_idle_time_end = time.ticks_add(time.ticks_ms(), self.mmu_idle_command_delay)
+                
 
         if not self.sent_timeout:
             if len(self.cmd_queue) > 0 and self.send_queue_this_iteration:
                 next_cmd = self.cmd_queue.pop(0)
+            elif self.mmu_idle_time_end and time.ticks_diff(self.mmu_idle_time_end, time.ticks_ms()) >= 0 and len(self.cmd_queue) == 0:
+                next_cmd = None
             else:
                 next_cmd = QueuedCommand(self.status_mmu_index, QCR_SILENT, 'F13\r\n')
                 self.status_mmu_index = (self.status_mmu_index + 1) % len(self.mmu_comms)
 
-            self.send_queue_this_iteration = not self.send_queue_this_iteration
+            if next_cmd:
+                self.mmu_idle_time_end = None
+                self.send_queue_this_iteration = not self.send_queue_this_iteration
 
-            self.sent_target_mmu = next_cmd.target_mmu_id
-            self.sent_response_handling = next_cmd.response_handling
-            self.sent_timeout = time.ticks_add(time.ticks_ms(), self.mmu_response_timeout)
+                self.sent_target_mmu = next_cmd.target_mmu_id
+                self.sent_response_handling = next_cmd.response_handling
+                self.sent_timeout = time.ticks_add(time.ticks_ms(), self.mmu_response_timeout)
 
-            self.send_mmu(next_cmd.command, next_cmd.target_mmu_id)
+                self.send_mmu(next_cmd.command, next_cmd.target_mmu_id)
 
     def update_cached_F13_data(self, new_F13_response: str, source_mmu: int):
         cmd_split = new_F13_response.split(' ')
@@ -323,8 +333,17 @@ class IJ_Core:
                 for peripheral in self.peripherals:
                     peripheral.timeout()
 
+    def update_peripheral(self):
+        if len(self.peripherals) > 0:
+            if self.update_peripheral_index >= len(self.peripherals):
+                self.update_peripheral_index = 0
+            if len(self.peripherals) > 0:
+                self.peripherals[self.update_peripheral_index].update(self.sent_timeout is None)
+                self.update_peripheral_index += 1
+
     def run(self):
-        update_peripheral_index = 0
+        self.mmu_timeouts = [0] * len(self.mmu_comms)
+        self.mmu_requests = [0] * len(self.mmu_comms)
         if self.printer_comm:
             while self.printer_comm.check_receive(): 
                 self.printer_comm.receive() # Clear any that came in before core was ready
@@ -336,13 +355,7 @@ class IJ_Core:
                 self.update_printer()
                 self.update_mmu()
                 self.update_timeout()
-
-                if len(self.peripherals) > 0:
-                    if update_peripheral_index >= len(self.peripherals):
-                        update_peripheral_index = 0
-                    if len(self.peripherals) > 0:
-                        self.peripherals[update_peripheral_index].update()
-                        update_peripheral_index += 1
+                self.update_peripheral()
             except KeyboardInterrupt:
                 self.terminate = True
             except Exception as e:

@@ -1,4 +1,5 @@
 # DHT11 / DHT22 input.
+# Due to slow response, these are ONLY read when not awaiting MMU response.
 #
 # Config params:
 #  pin - Specifies the pin ID to use.
@@ -40,8 +41,8 @@ class IJP_DHT(IJ_Peripheral):
     def get_status_info(self) -> str:
         return f'{self.short_identifier}_temperature: {self.temperature} {self.short_identifier}_humidity: {self.humidity}'
     
-    def update(self):
-        if time.ticks_diff(self.delay_timeout, time.ticks_ms()) < 0:
+    def update(self, core_idle: bool):
+        if core_idle and time.ticks_diff(self.delay_timeout, time.ticks_ms()) < 0:
             try:
                 temp, humidity = self.sensor.read()
                 if temp is None:

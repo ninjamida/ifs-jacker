@@ -52,7 +52,7 @@ class IJP_Analog_Pin(IJ_Peripheral):
         else:
             return int(sum(self.samples) / len(self.samples))
 
-    def update(self):
+    def update(self, core_idle: bool):
         if self.read_delay > 0:
             if self.is_first_update or time.ticks_diff(self.next_sample_time, time.ticks_ms()) < 0:
                 new_sample = self.pin.read_u16()
