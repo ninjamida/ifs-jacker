@@ -6,7 +6,7 @@ purchasing some of my paid models on Printables asa way to support my work -
 feel free to think of it as making a donation that you also get a fun model in
 return for.
 
-https://www.printables.com/@Trumble/store
+https://www.printables.com/@ninjamida/store
 ***
 
 This is still an early version. Use at your own risk.
