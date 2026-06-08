@@ -251,7 +251,7 @@ class IJ_Core:
         if not self.sent_timeout:
             if len(self.cmd_queue) > 0 and self.send_queue_this_iteration:
                 next_cmd = self.cmd_queue.pop(0)
-            elif self.mmu_idle_time_end and time.ticks_diff(self.mmu_idle_time_end, time.ticks_ms()) >= 0:
+            elif self.mmu_idle_time_end and time.ticks_diff(self.mmu_idle_time_end, time.ticks_ms()) >= 0 and len(self.cmd_queue) == 0:
                 next_cmd = None
             else:
                 next_cmd = QueuedCommand(self.status_mmu_index, QCR_SILENT, 'F13\r\n')
