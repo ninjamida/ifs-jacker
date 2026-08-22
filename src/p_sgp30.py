@@ -42,6 +42,9 @@ class IJP_SGP30(IJ_Peripheral):
         self.last_tvoc = 0
         self.last_co2 = 400
 
+        self.soft_zero_tvoc = 0
+        self.soft_zero_co2 = 0
+
         self.is_error_state = False
         self.error_recover_failed = False
 
@@ -74,15 +77,23 @@ class IJP_SGP30(IJ_Peripheral):
             except:
                 pass
             self.sgp30.iaq_init()
-            return "F4 periperhal ok. Baseline erased"
+            return "F4 peripheral ok. Baseline erased"
         if f == 5:
             self.is_error_state = True
             self.error_recover_failed = False
             return "F5 peripheral ok. Marked for reset"
+        if f == 6:
+            self.soft_zero_tvoc = self.last_tvoc
+            self.soft_zero_co2 = self.last_co2
+            return "F6 peripheral ok. Soft zero set"
+        if f == 7:
+            self.soft_zero_tvoc = 0
+            self.soft_zero_co2 = 0
+            return "F7 peripheral ok. Soft zero cleared"
         return super().handle_command(f, l, s, params)
 
     def get_status_info(self) -> str:
-        return f'{self.short_identifier}_co2: {self.last_co2} {self.short_identifier}_tvoc: {self.last_tvoc}'
+        return f'{self.short_identifier}_co2: {self.last_co2 - self.soft_zero_co2} {self.short_identifier}_tvoc: {self.last_tvoc - self.soft_zero_tvoc}'
     
     def update(self, core_idle: bool):
         if self.is_error_state:
