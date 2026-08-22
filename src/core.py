@@ -1,4 +1,4 @@
-import re, time
+import re, time, machine
 from comm import _IJ_Comm_Abstract, IJ_Comm_Manager
 from peripheral import IJ_Peripheral, load_peripheral
 from console import get_console
@@ -191,6 +191,22 @@ class IJ_Core:
                 self.send_printer(f'Z6 ok. Peripheral {new_index} added')
             except:
                 self.send_printer('Z6 ok. Failed')
+
+        if z == 7:
+            pwr_cause = machine.reset_cause()
+            if pwr_cause == machine.PWRON_RESET:
+                pwr_cause = "Power-on reset"
+            elif pwr_cause == machine.WDT_RESET:
+                pwr_cause = "Watchdog reset"
+            elif pwr_cause == machine.SOFT_RESET:
+                pwr_cause = "Soft reset"
+            elif pwr_cause == machine.HARD_RESET:
+                pwr_cause = "Hard reset"
+            elif pwr_cause == machine.DEEPSLEEP_RESET:
+                pwr_cause = "Deepsleep reset"
+            else:
+                pwr_cause = f"Reset code: {pwr_cause}"
+            self.send_printer(f'Z7 ok. Reset cause: {pwr_cause}')
 
 
         if z == 99:
